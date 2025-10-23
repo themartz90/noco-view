@@ -8,10 +8,15 @@ export async function POST(request: NextRequest) {
     if (passcode === correctPasscode) {
       const response = NextResponse.json({ success: true });
 
+      // Determine if we're using HTTPS
+      const protocol = request.headers.get('x-forwarded-proto') ||
+                      (request.url.startsWith('https') ? 'https' : 'http');
+      const isSecure = protocol === 'https';
+
       // Set cookie for 90 days
       response.cookies.set('auth', 'authenticated', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure,
         sameSite: 'strict',
         maxAge: 60 * 60 * 24 * 90, // 90 days
         path: '/',

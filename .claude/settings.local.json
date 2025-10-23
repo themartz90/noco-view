@@ -13,7 +13,12 @@
       "Bash(git init:*)",
       "Bash(git remote add:*)",
       "Bash(npm run build:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nRelease v1.0.0 - NocoDB Mood Diary Viewer\n\nComplete mood tracking visualization application for bipolar disorder management.\n\nFeatures:\n- 📊 Interactive mood timeline with expandable entries\n- 📈 SVG line chart showing mood trends over time\n- 🎯 KPI summary cards (avg mood, avg state, overload, stress, sleep)\n- 🔒 Passcode authentication (90-day cookie)\n- 🎨 Medical teal color theme\n- 📅 Date range filtering (1-12 months, all time)\n- 🔗 Clickable chart points that jump to entries\n- 🏥 Production-ready with Docker deployment\n- 🤖 Robots.txt blocking all search engines and AI crawlers\n- 🛡️ Security headers (CSP, HSTS, X-Frame-Options, etc.)\n- 💾 Automated backup system with 30-day retention\n\nTechnical Stack:\n- Next.js 14.2 with App Router\n- TypeScript\n- Tailwind CSS with custom medical theme\n- NocoDB API integration\n- Docker with standalone build\n- Health checks and monitoring\n\nDeployment:\n- Port: 3448\n- Authentication: Passcode (120290)\n- Backup: Automatic on each deployment\n- Health endpoint: /api/health\n\n🤖 Generated with Claude Code (https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git config:*)",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
