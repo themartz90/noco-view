@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       response.cookies.set('auth', 'authenticated', {
         httpOnly: true,
         secure: false,
-        sameSite: 'strict',
+        sameSite: 'lax', // 'lax' is more compatible than 'strict'
         maxAge: 60 * 60 * 24 * 90, // 90 days
         path: '/',
       });

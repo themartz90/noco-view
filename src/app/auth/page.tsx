@@ -19,6 +19,7 @@ export default function AuthPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passcode }),
+        credentials: 'include', // Required for cookies to be stored
       });
 
       if (response.ok) {
