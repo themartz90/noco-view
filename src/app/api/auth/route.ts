@@ -8,10 +8,15 @@ export async function POST(request: NextRequest) {
     if (passcode === correctPasscode) {
       const response = NextResponse.json({ success: true });
 
-      // Determine if we're using HTTPS
-      const protocol = request.headers.get('x-forwarded-proto') ||
-                      (request.url.startsWith('https') ? 'https' : 'http');
-      const isSecure = protocol === 'https';
+      // Check multiple indicators for HTTPS
+      const forwardedProto = request.headers.get('x-forwarded-proto');
+      const host = request.headers.get('host') || '';
+      const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+
+      // Only use secure cookies when:
+      // 1. x-forwarded-proto is explicitly 'https' (Cloudflare), OR
+      // 2. Not localhost AND NODE_ENV is production
+      const isSecure = forwardedProto === 'https' || (!isLocalhost && process.env.NODE_ENV === 'production');
 
       // Set cookie for 90 days
       response.cookies.set('auth', 'authenticated', {
