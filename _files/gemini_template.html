@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Přehled nálad</title>
+    <style>
+        /* --- Základní styly --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        /* --- Kontejner časové osy --- */
+        #timeline-container {
+            position: relative;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Vertikální čára časové osy */
+        #timeline-container::before {
+            content: '';
+            position: absolute;
+            left: 50px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #ddd;
+            border-radius: 2px;
+        }
+
+        /* --- Položka (karta) jednoho dne --- */
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #ccc; /* Výchozí barva, bude přepsána */
+            transition: all 0.3s ease;
+        }
+
+        /* Tečka na časové ose */
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -33px; /* (50px - (šířka 20px / 2)) - 5px border */
+            top: 22px;
+            width: 20px;
+            height: 20px;
+            background-color: #fff;
+            border: 4px solid #ccc; /* Výchozí barva, bude přepsána */
+            border-radius: 50%;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        /* --- Styly pro různé nálady (Klíčové pro vizualizaci) --- */
+        
+        /* +3 Jasná hypománie */
+        .timeline-item[data-mood-level="p3"] { border-color: #e74c3c; }
+        .timeline-item[data-mood-level="p3"]::after { border-color: #e74c3c; }
+        .timeline-item[data-mood-level="p3"] .mood-summary .mood-text { color: #e74c3c; }
+
+        /* +2 Hypománie */
+        .timeline-item[data-mood-level="p2"] { border-color: #e67e22; }
+        .timeline-item[data-mood-level="p2"]::after { border-color: #e67e22; }
+        .timeline-item[data-mood-level="p2"] .mood-summary .mood-text { color: #e67e22; }
+
+        /* +1 Lehké zrychlení */
+        .timeline-item[data-mood-level="p1"] { border-color: #f1c40f; }
+        .timeline-item[data-mood-level="p1"]::after { border-color: #f1c40f; }
+        .timeline-item[data-mood-level="p1"] .mood-summary .mood-text { color: #f1c40f; }
+        
+        /* 0 Stabilní */
+        .timeline-item[data-mood-level="0"] { border-color: #2ecc71; }
+        .timeline-item[data-mood-level="0"]::after { border-color: #2ecc71; }
+        .timeline-item[data-mood-level="0"] .mood-summary .mood-text { color: #2ecc71; }
+
+        /* -1 Mírná apatie, úzkost */
+        .timeline-item[data-mood-level="m1"] { border-color: #5dade2; }
+        .timeline-item[data-mood-level="m1"]::after { border-color: #5dade2; }
+        .timeline-item[data-mood-level="m1"] .mood-summary .mood-text { color: #5dade2; }
+
+        /* -2 Smutek, útlum */
+        .timeline-item[data-mood-level="m2"] { border-color: #3498db; }
+        .timeline-item[data-mood-level="m2"]::after { border-color: #3498db; }
+        .timeline-item[data-mood-level="m2"] .mood-summary .mood-text { color: #3498db; }
+
+        /* -3 Těžká deprese */
+        .timeline-item[data-mood-level="m3"] { border-color: #34495e; }
+        .timeline-item[data-mood-level="m3"]::after { border-color: #34495e; }
+        .timeline-item[data-mood-level="m3"] .mood-summary .mood-text { color: #34495e; }
+
+
+        /* --- Shrnutí (Sbalený stav) --- */
+        .timeline-summary {
+            display: grid;
+            grid-template-columns: 100px 1fr auto;
+            align-items: center;
+            padding: 15px 20px;
+            cursor: pointer;
+        }
+        
+        .date-display {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #555;
+            padding-left: 20px; /* Odsazení od čáry */
+        }
+        
+        .mood-summary .mood-text {
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .context-summary {
+            font-size: 0.9em;
+            color: #777;
+            text-align: right;
+            padding-left: 15px;
+        }
+
+        .context-summary strong {
+            color: #555;
+        }
+
+        .expand-btn {
+            font-size: 1.5em;
+            color: #aaa;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-left: 15px;
+        }
+
+        /* --- Detail (Rozbalený stav) --- */
+        .timeline-details {
+            display: none; /* Skryté ve výchozím stavu */
+            padding: 0 20px 20px 40px;
+            margin-left: 80px;
+            border-top: 1px dashed #eee;
+        }
+
+        .timeline-item.expanded .timeline-details {
+            display: block; /* Zobrazí se po kliknutí */
+        }
+
+        .timeline-item.expanded .expand-btn {
+            transform: rotate(180deg);
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .detail-section {
+            background-color: #fdfdfd;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .detail-section h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 5px;
+        }
+
+        /* Formátování seznamů příznaků */
+        .detail-section ul {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 0.95em;
+        }
+
+        .detail-section ul li {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        
+        /* Formátování poznámek a spouštěčů */
+        .note-section p {
+            font-style: italic;
+            color: #555;
+            margin-top: 0;
+            line-height: 1.5;
+        }
+        
+        /* Pro menší obrazovky */
+        @media (max-width: 768px) {
+            #timeline-container::before {
+                left: 20px;
+            }
+            .timeline-item::after {
+                left: -23px;
+            }
+            .timeline-summary {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding-left: 40px;
+            }
+            .date-display {
+                padding-left: 0;
+            }
+            .context-summary {
+                text-align: left;
+                padding-left: 0;
+            }
+            .expand-btn {
+                position: absolute;
+                top: 15px;
+                right: 15px;
+            }
+            .timeline-details {
+                margin-left: 0;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Psychiatrický přehled nálad</h1>
+
+    <div id="timeline-container">
+        </div>
+
+    <script>
+        // --- DATA ZÁZNAMŮ ---
+        // Zde vkládejte data. Můžete je zkopírovat z CSV a převést na tento formát.
+        // Používám ` (backtick) pro vícerořádkové texty.
+        
+        const moodData = [
+            {
+                datum: "2025-10-18",
+                nálada: "-1 Mírná apatie, úzkost",
+                energie: "Nízká",
+                únava: "Silná",
+                spánekDélka: "10",
+                spánekKvalita: "Průměrný",
+                stres: "4",
+                hypoPříznaky: "Klepání nohou / tělesný neklid,Přehrávání imaginárních scénářů,Silné přemýšlení o sociálních interakcích",
+                depPříznaky: "Silná únava bez zjevného důvodu,Apatie (nezájem o běžné věci),Bezmoc / pocit zbytečnosti,Zpomalené myšlení,Úzkost,Nechuť k činnosti i když je známá a příjemná",
+                spouštěč: "Únava (silná), nausea, špatné trávení",
+                pomohlo: "KBT, odpočinek",
+                poznámka: "Bohužel i dnes jsem měl velmi nízkou energii, nemožnost cokoliv dělat a celkem silné problémy s trávením a to se podepisovalo hodně na mém psychickém stavu a eskalaci BP.",
+                přetížení: "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+            },
+            {
+                datum: "2025-10-17",
+                nálada: "-2 Smutek, útlum, stažení",
+                energie: "Nízká",
+                únava: "Silná",
+                spánekDélka: "12",
+                spánekKvalita: "Průměrný",
+                stres: "3",
+                hypoPříznaky: "Klepání nohou / tělesný neklid,Nutkání k mluvení nahlas i bez kontextu,Zrychlené myšlení nebo jednání,Přehrávání imaginárních scénářů",
+                depPříznaky: "Silná únava bez zjevného důvodu,Neschopnost se soustředit,Zpomalené myšlení,Strach z budoucnosti / z vlastního stavu,Vyhýbání se kontaktu s lidmi,Úzkost",
+                spouštěč: "Silná únava (i přes odpočinek a spánek), nausea, špatné trávení",
+                pomohlo: "KBT (2x)",
+                poznámka: "Dopoledne hypománie střední, pak přechod do úplného útlumu, velmi špatné trávení potom, nausea a velmi silná únava",
+                přetížení: "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+            },
+            {
+                datum: "2025-10-16",
+                nálada: "-1 Mírná apatie, úzkost",
+                energie: "Střední",
+                únava: "Silná",
+                spánekDélka: "6",
+                spánekKvalita: "Špatný",
+                stres: "4",
+                hypoPříznaky: "Klepání nohou / tělesný neklid,Přehrávání imaginárních scénářů,Silné přemýšlení o sociálních interakcích,Nadměrné pocení",
+                depPříznaky: "Silná únava bez zjevného důvodu,Tlak na prsou / tíha / uzel v hrudi,Neschopnost se soustředit,Zpomalené myšlení,Vyhýbání se kontaktu s lidmi,Úzkost",
+                spouštěč: "Únava, negativní myšlenky (vracení starších špatných zkušeností)",
+                pomohlo: "KBT (2x za den)",
+                poznámka: `Při usínání škubání nohou a těžké usínání, po usnutí -> probuzení za 10 minut úplně propocený a v ""šoku"", potom usínání normální.`,
+                přetížení: "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+            },
+            {
+                datum: "2025-09-30",
+                nálada: "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+                energie: "Vysoká",
+                únava: "Střední",
+                spánekDélka: "4",
+                spánekKvalita: "Špatný",
+                stres: "4",
+                hypoPříznaky: "Klepání nohou / tělesný neklid,Říkanky / zpívání si dokola,Nutkání k mluvení nahlas i bez kontextu,Hledání něčeho „nového“ / dopaminový chtíč,Zrychlené myšlení nebo jednání,Silné přemýšlení o sociálních interakcích,Přehrávání imaginárních scénářů,Nadměrné pocení",
+                depPříznaky: "Tlak na prsou / tíha / uzel v hrudi,Neschopnost se soustředit,Výpadky paměti / ztráta slov,Nechuť k činnosti i když je známá a příjemná",
+                spouštěč: "Řešení problému s O2 službami / volání",
+                pomohlo: "",
+                poznámka: "Řešení přineslo větší stres a velmi rychlý nájezd silnější hypománie",
+                přetížení: "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+            }
+            // --- SEM PŘIDÁVEJTE DALŠÍ ZÁZNAMY ---
+            // {
+            //     datum: "YYYY-MM-DD",
+            //     nálada: "...",
+            //     ... atd.
+            // }
+        ];
+
+        // --- FUNKCE PRO VYKRESLENÍ ---
+
+        const container = document.getElementById('timeline-container');
+
+        /**
+         * Převede číselný kód nálady na CSS třídu
+         */
+        function getMoodLevel(moodString) {
+            if (moodString.startsWith("+3")) return "p3";
+            if (moodString.startsWith("+2")) return "p2";
+            if (moodString.startsWith("+1")) return "p1";
+            if (moodString.startsWith("0")) return "0";
+            if (moodString.startsWith("-1")) return "m1";
+            if (moodString.startsWith("-2")) return "m2";
+            if (moodString.startsWith("-3")) return "m3";
+            return "default";
+        }
+
+        /**
+         * Převede textový řetězec příznaků (oddělený čárkou nebo novým řádkem) na HTML seznam
+         */
+        function formatSymptoms(symptomString) {
+            if (!symptomString || symptomString.trim() === "") {
+                return "<li>Žádné zaznamenané</li>";
+            }
+            // Rozdělí string podle čárky, ale také podle nového řádku (jak je ve vašich datech)
+            const symptoms = symptomString.split(/,|\n/).map(s => s.trim()).filter(s => s.length > 0);
+            return symptoms.map(s => `<li>${s}</li>`).join('');
+        }
+        
+        /**
+         * Přeformátuje datum z YYYY-MM-DD na DD. MM. YYYY
+         */
+        function formatDate(dateString) {
+            const parts = dateString.split('-');
+            if (parts.length !== 3) return dateString;
+            return `${parts[2]}. ${parts[1]}. ${parts[0]}`;
+        }
+
+        /**
+         * Vykreslí všechny záznamy na stránku
+         */
+        function renderTimeline() {
+            if (!moodData || moodData.length === 0) {
+                container.innerHTML = "<p>Žádná data k zobrazení.</p>";
+                return;
+            }
+
+            // Obrátíme pole, aby se nejnovější záznamy zobrazily nahoře
+            const reversedData = [...moodData].reverse();
+
+            reversedData.forEach(day => {
+                const moodLevel = getMoodLevel(day.nálada);
+                const moodText = day.nálada.substring(day.nálada.indexOf(" ") + 1); // Zobrazí jen text nálady
+                
+                const itemHTML = `
+                <div class="timeline-item" data-mood-level="${moodLevel}">
+                    <div class="timeline-summary" role="button" tabindex="0">
+                        <div class="date-display">${formatDate(day.datum)}</div>
+                        <div class="mood-summary">
+                            <span class="mood-text">${moodText}</span>
+                        </div>
+                        <div class="context-summary">
+                            <div><strong>Přetížení:</strong> ${day.přetížení || 'Nezaznamenáno'}</div>
+                        </div>
+                        <span class="expand-btn">▼</span>
+                    </div>
+
+                    <div class="timeline-details">
+                        
+                        <div class="detail-section note-section">
+                            <h4>Klíčové události a poznámky</h4>
+                            <p><strong>Spouštěč:</strong> ${day.spouštěč || "Nezaznamenán"}</p>
+                            <p><strong>Poznámka:</strong> ${day.poznámka || "Žádná"}</p>
+                            <p><strong>Co pomohlo:</strong> ${day.pomohlo || "Nezaznamenáno"}</p>
+                        </div>
+                        
+                        <div class="details-grid">
+                            <div class="detail-section">
+                                <h4>Metriky dne</h4>
+                                <ul>
+                                    <li><strong>Energie:</strong> ${day.energie}</li>
+                                    <li><strong>Únava:</strong> ${day.únava}</li>
+                                    <li><strong>Spánek:</strong> ${day.spánekDélka}h (${day.spánekKvalita})</li>
+                                    <li><strong>Stres:</strong> ${day.stres} / 5</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Depresivní příznaky</h4>
+                                <ul>
+                                    ${formatSymptoms(day.depPříznaky)}
+                                </ul>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>Hypomanické příznaky</h4>
+                                <ul>
+                                    ${formatSymptoms(day.hypoPříznaky)}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+                container.innerHTML += itemHTML;
+            });
+
+            // Přidání posluchačů pro rozbalení/sbalení
+            addEventListeners();
+        }
+
+        /**
+         * Přidá posluchače událostí pro všechny karty
+         */
+        function addEventListeners() {
+            container.querySelectorAll('.timeline-summary').forEach(summary => {
+                summary.addEventListener('click', () => {
+                    summary.parentElement.classList.toggle('expanded');
+                });
+                
+                // Přidání možnosti ovládat klávesnicí (pro přístupnost)
+                summary.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        summary.parentElement.classList.toggle('expanded');
+                    }
+                });
+            });
+        }
+
+        // Spuštění vykreslení po načtení stránky
+        document.addEventListener('DOMContentLoaded', renderTimeline);
+
+    </script>
+</body>
+</html>

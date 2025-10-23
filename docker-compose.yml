@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  noco-view:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: noco-view
+    ports:
+      - "3448:3000"
+    environment:
+      - NODE_ENV=production
+      - AUTH_PASSCODE=120290
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.docker.compose.project=noco-view"
+      - "com.docker.compose.service=noco-view"

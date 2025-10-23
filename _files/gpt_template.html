@@ -1,0 +1,4061 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mood Diary — Klinický přehled</title>
+<style>
+  :root {
+    --bg: #0b0f12;
+    --card: #12181f;
+    --muted: #8aa0b4;
+    --text: #e8f0f8;
+    --accent: #7cc4ff;
+    --accent-2: #8bffb8;
+    --danger: #ff7a7a;
+    --warn: #ffd166;
+    --ok: #9be57c;
+    --chip: #1b2430;
+    --border: #223043;
+    --shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  }
+  header {
+    position: sticky; top: 0; z-index: 50; background: linear-gradient(180deg, #0b0f12 70%, transparent);
+    padding: 20px 16px 8px; border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(6px);
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 12px; }
+  h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: 0.3px; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+  .controls {
+    display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 8px; margin-top: 12px; align-items: end;
+  }
+  .controls label { font-size: 12px; color: var(--muted); display:block; margin-bottom: 4px; }
+  input[type="date"], select, input[type="search"] {
+    width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 10px; border-radius: 10px; outline: none;
+  }
+  .chip-btn {
+    padding: 8px 10px; background: var(--chip); border: 1px solid var(--border); border-radius: 999px; color: var(--text);
+    cursor: pointer; font-size: 12px; user-select: none; text-align: center;
+  }
+  .chip-btn.active { outline: 2px solid var(--accent); }
+  .grid {
+    display: grid; gap: 12px; margin: 14px 0 22px;
+  }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow);
+  }
+  .kpi { padding: 14px; }
+  .kpi .label { color: var(--muted); font-size: 12px; }
+  .kpi .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .spark { height: 80px; }
+  .legend { display:flex; gap:10px; align-items:center; color: var(--muted); font-size: 12px; padding: 0 6px 10px; }
+  .legend span.dot { width:10px; height:10px; border-radius:999px; display:inline-block; }
+  .row {
+    display:grid; grid-template-columns: 105px 70px 80px 80px 90px 1fr 26px; gap:10px; align-items:center; padding:12px;
+    border-top: 1px solid var(--border);
+  }
+  .row:first-child { border-top: none; }
+  .row .date { color: var(--text); font-weight: 600; }
+  .mood-badge {
+    font-weight: 700; padding: 4px 8px; border-radius: 8px; text-align:center; width: 100%;
+  }
+  .mood--neg2 { background:#341a1f; color:#ff9aa2; border:1px solid #6b2b37; }
+  .mood--neg1 { background:#2b2836; color:#caa8ff; border:1px solid #5a3f7a; }
+  .mood--zero { background:#1d2b34; color:#a5f0ff; border:1px solid #2e6174; }
+  .mood--pos1 { background:#203124; color:#b7ffcc; border:1px solid #3c7a52; }
+  .mood--pos2 { background:#22331b; color:#d7ff9e; border:1px solid #4a7a2e; }
+  .stress-dots { display:flex; gap:4px; }
+  .stress-dots span { width:8px; height:8px; border-radius:999px; background:#2a3a4b; display:inline-block; }
+  .stress-dots span.on { background: var(--warn); }
+  .chips { display:flex; flex-wrap: wrap; gap:6px; }
+  .chip {
+    background: var(--chip); border: 1px solid var(--border); border-radius: 999px; padding: 4px 8px; font-size: 12px; color: var(--text);
+  }
+  .overload-badge {
+    font-size: 12px; padding: 4px 8px; border-radius: 999px; border:1px solid var(--border); background: #2a1f1f; color: #ffb3b3;
+    white-space: nowrap;
+  }
+  .note { color: var(--muted); font-size: 13px; }
+  details summary { cursor: pointer; list-style: none; }
+  details[open] summary .exp { transform: rotate(90deg); }
+  .exp { display:inline-block; transition: .2s transform; font-size: 18px; vertical-align: middle; }
+  .section { margin-bottom: 22px; }
+  .section h2 { font-size: 16px; margin: 0 0 10px; color: var(--muted); padding: 0 2px; }
+  .list { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+  .week-head {
+    padding:10px 12px; font-weight:700; background:#0f1319; border-top:1px solid var(--border); color: var(--muted);
+  }
+  @media print {
+    header, .controls { display:none !important; }
+    .row { grid-template-columns: 90px 60px 70px 70px 70px 1fr 24px; padding: 6px; font-size: 12px; }
+    body { background: white; color: black; }
+    .card { border-color: #999; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <h1>Mood Diary – Klinický přehled</h1>
+    <div class="subtitle">Kondenzovaný pohled na výkyvy nálady, spouštěče, přetížení a poznámky.</div>
+    <div class="controls">
+      <div>
+        <label>Od</label>
+        <input type="date" id="fromDate">
+      </div>
+      <div>
+        <label>Do</label>
+        <input type="date" id="toDate">
+      </div>
+      <div>
+        <label>Filtr</label>
+        <select id="quickFilter">
+          <option value="all">Vše</option>
+          <option value="hasTrigger">Pouze se spouštěčem</option>
+          <option value="hasOverload">Pouze s přetížením</option>
+          <option value="hasNote">Pouze s poznámkou</option>
+        </select>
+      </div>
+      <div>
+        <label>Hledat v poznámkách</label>
+        <input type="search" id="search" placeholder="text…">
+      </div>
+      <div class="chip-btn" id="groupWeeks">Seskupit po týdnech</div>
+      <div class="chip-btn" id="compactMode">Kompaktní režim</div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <section class="grid">
+    <div class="kpis">
+      <div class="card kpi">
+        <div class="label">Průměrná nálada (výběr)</div>
+        <div class="value" id="avgMood">–</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Průměrný stres 1–5</div>
+        <div class="value" id="avgStress">–</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Spánek (h) – průměr</div>
+        <div class="value" id="avgSleep">–</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Dny s přetížením</div>
+        <div class="value" id="overloadCount">–</div>
+      </div>
+    </div>
+    <div class="card">
+      <svg class="spark" id="sparkline" width="100%" height="80" preserveAspectRatio="none"></svg>
+      <div class="legend">
+        <span class="dot" style="background:#ff9aa2"></span> nižší nálada &nbsp; 
+        <span class="dot" style="background:#b7ffcc"></span> vyšší nálada
+        <span style="margin-left:auto">Čára = trend</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Den po dni</h2>
+    <div id="list" class="list"></div>
+  </section>
+</main>
+
+<script>
+const DATA = [
+  {
+    "date": "2025-10-18",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 10.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Zpomalené myšlení",
+      "Úzkost",
+      "Nechuť k činnosti i když je známá a příjemná"
+    ],
+    "trigger": "Únava (silná), nausea, špatné trávení",
+    "helped": "KBT, odpočinek",
+    "note": "Bohužel i dnes jsem měl velmi nízkou energii, nemožnost cokoliv dělat a celkem silné problémy s trávením a to se podepisovalo hodně na mém psychickém stavu a eskalaci BP. ",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-10-17",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 12.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Vyhýbání se kontaktu s lidmi",
+      "Úzkost"
+    ],
+    "trigger": "Silná únava (i přes odpočinek a spánek), nausea, špatné trávení",
+    "helped": "KBT (2x)",
+    "note": "Dopoledne hypománie střední, pak přechod do úplného útlumu, velmi špatné trávení potom, nausea a velmi silná únava",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-10-16",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Vyhýbání se kontaktu s lidmi",
+      "Úzkost"
+    ],
+    "trigger": "Únava, negativní myšlenky (vracení starších špatných zkušeností)",
+    "helped": "KBT (2x za den)",
+    "note": "Při usínání škubání nohou a těžké usínání, po usnutí -> probuzení za 10 minut úplně propocený a v \"šoku\", potom usínání normální.",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-10-15",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Stres z běžících negativních myšlenek, ruminace",
+    "helped": "KBT cvičení proti stresu / ruminaci",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-10-14",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 14.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Velmi silná únava (post-stresová ze včerejšího dne)",
+    "helped": "KBT, odpočinek",
+    "note": "Silná únava, stejná vždy druhé den po nějaké stresové situaci.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-10-13",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Bezmoc / pocit zbytečnosti",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Pláč nebo tlak na slzy",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Vyhýbání se kontaktu s lidmi",
+      "Silná úzkost"
+    ],
+    "trigger": "Známý tu byl doma vyměnit čelo postele, protože bylo rozbité, i když jsem u toho přímo nebyl, ten ruch okolo, lidé chodící sem a tam, kočky a psi rozdováděné z toho že se něco děje běhali okolo, nemohl jsem kvůli tomu samozřejmě být ve svém pokoji, neustálé mluvení okolo, myslel jsem že nemám jak z toho ven, kam utéct, najednou jsem se cítil v pasti a přišlo přetížení.",
+    "helped": "KBT (4x4x4x4, 4-6 + další - uzemnění 3x3, vizualizace, věty)",
+    "note": "Dnešek, i přes takovou blbost byl prostě strašně stresující, vrátilo se mi zase to, že jsem nemohl usnout, nohy vystřelovali při pokusu, pak při usnutí jsem se vzbudil zase za 10 minut, úplně zpocení, v šoku. Večer spánek byl nekvalitní, vzbudil jsem se po 5ti hodinách vzbudil, protože už to nešlo a pocit z toho byl velmi nepříjemný. ",
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-10-12",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Nausea, únava (pocit že nemohu nic dělat, protože jsem furt unavený a nemám ze dne vůbec nic, i když bych hrozně chtěl dělat více nebo mít funkční den)",
+    "helped": "KBT (2x, věty)",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-10-11",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Přehozené spaní po delší dobu (spánek od 16:00), špatné usínání",
+    "helped": "KBT (4x4x4), uzemnění",
+    "note": "Začínám KBT ve zvýšené formě, vícekrát denně, více dechových cvičení a dalších technik",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-10-10",
+    "dominant_mood": "-3 Těžká deprese, beznaděj",
+    "mood_num": -3,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": "Strach z budoucnosti. Závratě (+houpání), velká citlivost na pohyb (hlavně panorama, počítač, tv, mobil, rychlý pohyb předmětů v zorném poli, nebo rychlý pohyb hlavou.",
+    "helped": NaN,
+    "note": "Závratě mě silně omezují ve všem a velmi mi snižují motivaci, strach z budoucnosti, úzkost, stres. Po konzultaci s lékařem, podezření na oční vadu.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-10-09",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Nespavost bez tělesné únavy",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Vyhýbání se kontaktu s lidmi",
+      "Silná úzkost"
+    ],
+    "trigger": "Stále trvající problémy psoriatické artritidy (bolest) nově silná citlivost na pohyb, závratě), velký strach z budoucnosti a vlastního stavu, zklíčenost.",
+    "helped": NaN,
+    "note": "Střídání s hypománií, závratě a silná citlivost na pohyb (pocit houpání, vertigo)",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-10-08",
+    "dominant_mood": "-3 Těžká deprese, beznaděj",
+    "mood_num": -3,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Nespavost bez tělesné únavy",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Vyhýbání se kontaktu s lidmi",
+      "Silná úzkost"
+    ],
+    "trigger": "Stále trvající problémy psoriatické artritidy (bolest + nově silná citlivost na pohyb, závratě), velký strach z budoucnosti a vlastního stavu, zklíčenost.",
+    "helped": NaN,
+    "note": "Nechuť ke všemu, beznaděj, občas střídání s hypomanií. ",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-10-07",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Úzkost",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": "Opakující se závratě a velmi velká citlivost na pohyb (hlavou ale i obrazový - například posouvání stránky na pc, rychle se pohybující předměty atp.) -> vyvolává také nauseu -> strach z budoucnosti, zacyklení v přemýšlení jestli to bude dobré a také z nového problému závratí a citlivosti na pohyb",
+    "helped": NaN,
+    "note": "Občas lehká hypománie, převládající ovšem depresivní složka",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-10-06",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Úzkost",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": "Lehké zhoršení stavu (opět klouby v zadní části směrem ke krční páteři) -> strach z budoucnosti, zacyklení v přemýšlení jestli to bude dobré",
+    "helped": "odpoutání pozornosti sledováním TV atp. (ne moc účinné)",
+    "note": "Lehké zhoršení, mix deprese a hypománie, převládající ovšem hypománie",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-10-05",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 15.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání"
+    ],
+    "depr_symptoms": [
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Zpomalené myšlení",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost",
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Myšlenky na to že to nemá cenu / beznaděj"
+    ],
+    "trigger": "Stále pokračující problémy, strach ze stavu",
+    "helped": NaN,
+    "note": "Částečné zlepšení stavu, hlavně otoku, závratí a bolesti.",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-10-04",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 16.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Velká ospalost ze včerejšího dne a léků (dolmina + dimexol), strach ze stavu do budoucna",
+    "helped": "odpočinek, minimální aktivita",
+    "note": "zlepšení otoku a citlivosti",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-10-03",
+    "dominant_mood": "-3 Těžká deprese, beznaděj",
+    "mood_num": -3,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 5,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Bezmoc / pocit zbytečnosti",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Silná úzkost",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": "Silné zhoršení psoriatické artritidy, silný otok a bolest krční páteře, zad, čelistní kloub -> silné závratě, motání, nemožnost spát, ležet nebo pořádně sedět. Naléhavá návštěva revmatologie.",
+    "helped": NaN,
+    "note": "Obstřik krční páteře, čelistního kloubu a chrupavky u pravé lopatky + dolmina. Léky na doma: dimexol + dolmina",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-10-02",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Zpomalené myšlení",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Velká bolest artritidy, čelistní kloub -> závratě, nausea, motání hlavy, silná únava, narušený spánek, krční páteř / otok",
+    "helped": "Odpočinek, injekce na bolest (dolmina)",
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-10-01",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Zpomalené myšlení",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Velká bolest artritidy, čelistní kloub -> závratě, nausea, motání hlavy, silná únava, narušený spánek, krční páteř / otok",
+    "helped": "Odpočinek, injekce na bolest (dolmina)",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-30",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Vysoká",
+    "fatigue": "Střední",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Nechuť k činnosti i když je známá a příjemná"
+    ],
+    "trigger": "Řešení problému s O2 službami / volání",
+    "helped": NaN,
+    "note": "Řešení přineslo větší stres a velmi rychlý nájezd silnější hypománie",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-29",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Říkanky / zpívání si dokola",
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": NaN,
+    "overload": "0 - Žádné"
+  },
+  {
+    "date": "2025-09-28",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 8.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Vyhýbání se kontaktu s lidmi",
+      "Silná úzkost"
+    ],
+    "trigger": "Silná únava -> žádná úleva i přes spánek. Bolest artritidy, občasné vracení covid symptomů kvůli biologické léčbě",
+    "helped": NaN,
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-27",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 14.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Vyhýbání se kontaktu s lidmi",
+      "Silná úzkost"
+    ],
+    "trigger": "Extrémní únava -> žádná úleva i přes delší spánek + odpolední spánek. Bolest artritidy, vracení covid symptomů díky biologické léčbě",
+    "helped": NaN,
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-26",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Pocity viny nebo sebekritiky",
+      "Vyhýbání se kontaktu s lidmi",
+      "Silná úzkost",
+      "Myšlenky na to že to nemá cenu / beznaděj"
+    ],
+    "trigger": "Včerejší návštava lékaře, bolest artritidy, přehrávání scénářů v hlavě, výrazný neklid a stres",
+    "helped": "KBT, ukotvení 3x3, klid, tiché prostředí",
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-25",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Vyhýbání se kontaktu s lidmi",
+      "Úzkost"
+    ],
+    "trigger": "Návštěva lékaře, hypománie a rozhozený spánek",
+    "helped": "KBT -> uklidnění, izolace",
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-24",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 11.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nadměrné pocení",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Silná únava, bolest artritidy -> stres z návštěvy lékaře další den, přehrávání scénářů v hlavě",
+    "helped": "KBT, odpočinek, omezení podmětů",
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-23",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Úzkost",
+      "Neschopnost se soustředit"
+    ],
+    "trigger": "Silná únava, bolest artritidy",
+    "helped": "odpočinek,omezení hlasitých zvuků a silnějších podmětů kvůli přetížení",
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-22",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Úzkost"
+    ],
+    "trigger": "Silná únava, bolest artritidy, částečné vrácení covidu / nemoci",
+    "helped": "odpočinek, izolace / omezení hlasitých zvuků a silnějších podmětů kvůli přetížení",
+    "note": NaN,
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-09-21",
+    "dominant_mood": "-3 Těžká deprese, beznaděj",
+    "mood_num": -3,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 9.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Výpadky paměti / ztráta slov",
+      "Zpomalené myšlení",
+      "Neschopnost se soustředit",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Pocity viny nebo sebekritiky",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": "Částečné navrácení covidu, přízanků, frustrace, silná únava, deprese",
+    "helped": NaN,
+    "note": "Silné přetížení, hlavně během večera, spánek 2x během dne -> bez pomoci / zlepšení.",
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-09-20",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Úzkost",
+      "Zkreslení reality",
+      "Pocity viny nebo sebekritiky"
+    ],
+    "trigger": "Extrémní únava, špatný spánek",
+    "helped": NaN,
+    "note": "Částečné vrácení covidu -> příznaků",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-19",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Bolest artritidy -> čelistní kloub -> závratě, nausea. Špatný spánek, nemožnost usnout, brzké probuzení, velmi špatné a nepříjemné sny",
+    "helped": "Odpolední spánek, KBT, omezení zvuků a silnějších podmětů",
+    "note": "Nutnost odpoledního spánku -> kvalitnější spánek, doznaky covidu",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-18",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Velmi špatný spánek (probouzení, zlé sny), nausea, bolest artritidy",
+    "helped": "Odpočinek během dne, izolace / ticho, KBT",
+    "note": "Stále doznaky covidu, rozhozené spaní, střídání deprese a hypománie",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-17",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Říkanky / zpívání si dokola",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Bolest artritidy, špatné sny, doznaky covidu",
+    "helped": "odpolední spánek, KBT",
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-16",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Zrychlené myšlení nebo jednání",
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Úzkost"
+    ],
+    "trigger": "Bolest artritidy, špatný spánek (zlé sny, probouzení)",
+    "helped": "KBT, odpolední odpočinek",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-15",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Říkanky / zpívání si dokola",
+      "Zrychlené myšlení nebo jednání",
+      "Nespavost bez tělesné únavy",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Bolest artritidy, špatný spánek (zlé sny, časté probouzení) ",
+    "helped": "KBT, odpočinek během dne, tiché prostředí",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-14",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení",
+      "Nutkání k mluvení nahlas i bez kontextu"
+    ],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Výpadky paměti / ztráta slov",
+      "Neschopnost se soustředit"
+    ],
+    "trigger": "Stále trvající covid (ustupující), velmi silná bolest artritidy, pocity bezmoci a nelepšící se situace",
+    "helped": NaN,
+    "note": "I když se nálada střídala s lehčí depresí během dne, převládala hypomanie, většinu času +1, krátce +2",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-13",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 12.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Pocity viny nebo sebekritiky",
+      "Úzkost"
+    ],
+    "trigger": "Extrémně silná únava, covid, velmi silná bolest artritidy",
+    "helped": "Nutnust spánku během dne (bohužel bez zlepšení únavy)",
+    "note": "Lehká hypomanie večer, jinak extrémně silná únava, po probuzení beze změny.",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-12",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Sklon k filozofickým nebo grandiózním myšlenkám",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Pocity viny nebo sebekritiky",
+      "Úzkost"
+    ],
+    "trigger": "covid -> stále trvající, silná bolest artritidy",
+    "helped": "odpočinek",
+    "note": "Během dne, střídání s depresí, převažující ale hypomanie",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-11",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": "Velmi silné bolesti artritidy, nespavost, kratší deprese střídající převažující lehčí až střední hypomanii -> pocit že v žádné fází není \"klid\"",
+    "helped": "Odpočinek, klid, tižší prostředí",
+    "note": "Stále covid, silné bolesti artritidy, velmi kolísavé nálady a rychlé střídání depresivních pocitů s hypománií ",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-10",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Pocity viny nebo sebekritiky",
+      "Úzkost"
+    ],
+    "trigger": "Velmi silná bolest artritidy (nutnost injekcí na bolest), kolísavá hypománie ze střední do silnější, občas mix s depresí, covid.",
+    "helped": "Odpočinek",
+    "note": "Stále covid, silné bolesti, nechuť cokoliv řešit, depresivní pocity střídá hypománie.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-09",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Stále nemoc -> covid, přehrávání nepříjemných scénářů v mysli, bolest artritidy (zvyšující se)",
+    "helped": "odpočinek, televize, zaměstnání mysli",
+    "note": "Těžko se mi nyní rozlišuje co přesně je z BP a co z nemoci, hlavně v rámci únavy, dlouhá doba nemoci na mě těžce doléhá psychicky a cítím narůstající nervozitu a stres, napětí a podráždění, velmi často se střídající nálady",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-08",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 8.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Zpomalené myšlení",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Úzkost"
+    ],
+    "trigger": "Nemoc -> covid, velmi silná únava po celý den bez zlepšení, odpolední spánek nepřinesl žádný pocit odpočinku, bolerst artritidy",
+    "helped": NaN,
+    "note": "Během dne střídání se střední hypománií",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-07",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Nespavost bez tělesné únavy",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Viróza -> covid, bolest artritidy, bez zlepšení",
+    "helped": "odpočinek",
+    "note": "Večer střídání s hypomanií",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-09-06",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Nespavost bez tělesné únavy",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Viróza -> covid, bolest artritidy -> stejná jako včera",
+    "helped": "odpočinek",
+    "note": "Večer střídání s hypomanií, občas během dne",
+    "overload": "0 - Žádné"
+  },
+  {
+    "date": "2025-09-05",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Nespavost bez tělesné únavy",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Viróza -> covid, bolest artritidy -> stejná jako včera",
+    "helped": "odpočinek",
+    "note": "Večerní mix hypomanie",
+    "overload": "0 - Žádné"
+  },
+  {
+    "date": "2025-09-04",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Silná únava po celý den, viróza -> covid, silná bolest artritidy (čelistní kloub -> závratě, nevolnost)",
+    "helped": "Odpočinek",
+    "note": "Během dne mix s lehkou hypomanií",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-03",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Silná únava po celý den, viróza -> covid, silná bolest artritidy ",
+    "helped": "Odpočinek",
+    "note": "Během dne mix s lehkou hypomanií, večer nespavost",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-02",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Silná únava po celý den, viróza, bolest artritidy ",
+    "helped": "Odpočinek",
+    "note": "Během dne mix s lehkou hypomanií, večer nespavost",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-09-01",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Silná únava po celý den, viróza, bolest artritidy ",
+    "helped": "Odpočinek",
+    "note": "Večer mix s hypomanií, nespavost -> problém usnout",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-31",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Říkanky / zpívání si dokola",
+      "Zrychlené myšlení nebo jednání",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Pocity viny nebo sebekritiky",
+      "Úzkost"
+    ],
+    "trigger": "Únava, bolest artritidy, stres z lidských interakcí",
+    "helped": "odpočinek, KBT (4-6, 3x3) ",
+    "note": "Během dne se začali objevovat příznaky virózy / nákazy, větší únava, BP více ve smíšeném režimu, silná únava, nadměrné pocení + fyzické příznaky nákazy",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-30",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Sklon k filozofickým nebo grandiózním myšlenkám"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Pocity viny nebo sebekritiky",
+      "Úzkost"
+    ],
+    "trigger": "Bolest artritidy (čelistní kloub, entezitida), únava",
+    "helped": "KBT, lehký režim, odpočinek během dne",
+    "note": "Střídání s lehčí hypomanií během dne",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-29",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Úzkost",
+      "Pocity viny nebo sebekritiky"
+    ],
+    "trigger": "Nespavost, střídání hypománie (převládající) a deprese, stálé přehrávání imaginárních a reálných scénářů ",
+    "helped": "odpočinek, KBT, relaxace",
+    "note": "procházka venku zhoršila přetížení",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-28",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi",
+      "Zkreslení reality"
+    ],
+    "trigger": "Návštěva lékaře, silná únava, přetížení, bolest artritidy (+ závratě -> čelistní kloub), špatné trávení",
+    "helped": "KBT, odpočinek, relax, izolace",
+    "note": "Po návštěvě lékaře silné přetížení typu \"je toho moc\", stres z každého podmětu, iritace ze všech hlasitějších zvuků atp -> nutnost izolace, ticha, klid",
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-08-27",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)"
+    ],
+    "trigger": "Anticipační stres z vyšetření / socíálních interakcí, únava, trávení, bolest z artritidy",
+    "helped": "KBT, odpočinek, relaxace",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-26",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 8.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": "Únava, bolest artritidy (čelistní kloub) -> závratě, velmi špatné trávení",
+    "helped": "Odpočinek, spánek přes den, lehké KBT",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-25",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Pocity viny nebo sebekritiky",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": "Silná únava, bolest z psoriatické artiridy (čelistní kloub), Hlídání psa (30 minut) -> knučení vedlo k okamžitému pžetížení, těžkost na prsou, stres",
+    "helped": "KBT, spánek přes den (únava už se nedala vydržet)",
+    "note": "Během dne záblesky hypomanie",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-24",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Bezmoc / pocit zbytečnosti",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Neschopnost se soustředit",
+      "Úzkost"
+    ],
+    "trigger": "Velmi silná únava po celý den, bolest artritidy (čelistní kloub)",
+    "helped": "3x spánek přes den, KBT",
+    "note": "I přes spánek, velmi silná únava, bolest z artritidy, večer a přes den mix s hypomanií, velmi studené nohy a pocit stresu, těžkosti na prsou",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-23",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 8.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": "Velmi silná únava, mix s hypomanií, bolest z psoriatické artritidy",
+    "helped": "Odpočinek + spánek 2x za den, KBT",
+    "note": "Silná únava celý den, po spánku jen malé zlepšení, těžké oči, letargie, nemožnost dělat cokoliv s výdejem ani malé energie, večer mix hypomanie + vyčerpání, bolesti artritidy. ",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-22",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "Velmi špatný spánek, ošklivé sny",
+    "helped": "+1 hodina spánku odpoledne, kbt 3x3",
+    "note": "Silná únava během dne, nemožnost skoro nic dělat.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-21",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Úzkost"
+    ],
+    "trigger": "únava",
+    "helped": "odpočinek, relax, ticho",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-20",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Úzkost",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-19",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Únava",
+    "helped": NaN,
+    "note": "Těžké oči po probuzení, přetížení od rána.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-18",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Sklon k filozofickým nebo grandiózním myšlenkám",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Smutek bez důvodu",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost",
+      "Pocity viny nebo sebekritiky"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": "Stále ještě špatné trávení, nausea. Večer přechod do hypomanie -> nervozita a rozjetí před spaním, špatné usínání.",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-17",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Příval energie bez důvodu",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Zpomalené myšlení",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "Únava / Přetížení",
+    "helped": "KBT, odpočinek, Lehká činnost",
+    "note": "Stále silná únava, nausea, trávicí potíže, večer lehká hypomanie",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-16",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Silná únava, úzkost",
+    "helped": "KBT, 3x3 / 4-6",
+    "note": "Bolavé oči z únavy, silná únava, rozhozené trávení, nausea",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-15",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Hledání něčeho „nového“ / dopaminový chtíč"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Výpadky paměti / ztráta slov",
+      "Smutek bez důvodu",
+      "Úzkost"
+    ],
+    "trigger": "Nausea",
+    "helped": NaN,
+    "note": "Přechod do lehčí hypománie, mix s depresí večer",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-14",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Příval energie bez důvodu"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": "Po zvýšení citalopramu zpět na 20mg, zlepšení zvládání hypomanie je mnohem lepší, přechod na euforické stavy, než nutkavé pocity, silný tlak a kompulze. ",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-13",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Říkanky / zpívání si dokola",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Úzkost",
+      "Smutek bez důvodu"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": "Pocítění zlepšení stavu po zvýšení Citalopramu",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-12",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu",
+      "Vzek a podráždění nebo výbušnost",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná"
+    ],
+    "trigger": "Hypomanie -> tlak",
+    "helped": "KBT,relaxace / ukotvení, studené obklady na čelo",
+    "note": "Zvýšení Citalopramu na 20mg -> po 12 hodinách lehký přechod hypomanie spíš do euforie, lehký útlum vzteku a podráždění.",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-11",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Vzek a podráždění nebo výbušnost",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Silná úzkost",
+      "Vyhýbání se kontaktu s lidmi",
+      "Nechuť k činnosti i když je známá a příjemná"
+    ],
+    "trigger": "Smíšený stav, tlak, nutkání, pocit únavy a přetlaku.",
+    "helped": "KBT (4-6, 4-7-8, 3x3), studený obklad, odpočinek, ticho",
+    "note": "Zhoršení další den, stav nepřestává ani se nelepší",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-10",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Pocit „musím něco dělat teď hned“",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Silná úzkost",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "Neklid, tlak, nutkání",
+    "helped": "KBT 4-7-8, 3x3, odpočinek",
+    "note": "I přes snahu, již v kuse denní nutkání, tvnitřní tlak a pocit že něco \"musím\" hledat nebo najít, dopaminový chtíč, větší úzkosti.",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-09",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Pocit „musím něco dělat teď hned“",
+      "Vzek a podráždění nebo výbušnost",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Nevyspání, nervozita a vztek, přetížení",
+    "helped": "KBT, ukotvení a relaxace, odpolední odpočink",
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-08",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Nutkání k impulzivnímu chování",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Pocit „musím něco dělat teď hned“",
+      "Sklon k filozofickým nebo grandiózním myšlenkám",
+      "Nutkání hledat nové podměty",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-07",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Výpadky paměti / ztráta slov",
+      "Neschopnost se soustředit",
+      "Nechuť k činnosti i když je známá a příjemná"
+    ],
+    "trigger": "Oprava dveří řemeslníkem -> stres a přetížení z toho celého, zbytek dne hypomanie",
+    "helped": "KBT (4-7-8), odpočinek, relaxace",
+    "note": "Po zbytek dne hypomanie, tlak a nutkání, poté zhoršené zažívání, nausea, bolest hlavym vyčerpání",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-06",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nutkání hledat nové podměty",
+      "Nadměrné pocení",
+      "Pocit „musím něco dělat teď hned“",
+      "Příval energie bez důvodu",
+      "Zvýšený zájem o sexualitu"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Vnitřní tlak, nutkání, hypomanie",
+    "helped": "KBT, odreagování od vnitřního tlaku -> práce na pc, odpoutání pozornosti",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-05",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání hledat nové podměty",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Úzkost"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-04",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Sklon k filozofickým nebo grandiózním myšlenkám",
+      "Přehrávání imaginárních scénářů",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": "Mix únavy a zrychlení",
+    "helped": NaN,
+    "note": "Hlavně ráno příšerná únava, fyzické symptomy: zimnice, těžké oči, chladné nohy, šimrání v krku -> pak přechod do hypomanie, únava zůstala",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-03",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": "Skoky hypomanie a deprese",
+    "helped": "KBT, lehký den, odpočinek, ukotvení / relaxace",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-08-02",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi",
+      "Nechuť k činnosti i když je známá a příjemná"
+    ],
+    "trigger": "Extrémní únava, přetížení",
+    "helped": "Spánek, odpočinek, lehké KBT",
+    "note": "Extrémně silná únava celý den, i po vyspání silná únava, těžké oči, bolest hlavy, výpadky paměti a slov, zpomalenost.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-08-01",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Vyhýbání se kontaktu s lidmi",
+      "Úzkost"
+    ],
+    "trigger": "Přehrávání návštěv ze 30 a 31. Přetížení.",
+    "helped": "KBT, ukotvení, relaxace, ticho",
+    "note": "Během dne stále přetížení, nutnost izolace, občasný mix s hypomanií dohromady.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-31",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Smutek bez důvodu",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Vyhýbání se kontaktu s lidmi",
+      "Úzkost"
+    ],
+    "trigger": "Návštěva revmatologie",
+    "helped": "KBT, uzemnění",
+    "note": "Druhá návštěva za sebou je pro mě přílíš. Velmi přetížený nervový systém, nespavost, útlum, převažující deprese s trochou hypomanie. Špatné zažívání, trávení, nausea.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-30",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [],
+    "depr_symptoms": [],
+    "trigger": "Cesta + návštěva -> plicní",
+    "helped": "KBT (3x3, 4-6, stabilizační věty, ukotvení)",
+    "note": "Hned od rána přetížení. Psychosomatické příznaky: bolest nosohltanu, těžké oči, silná únava, zimnice, nevolnost.  ",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-29",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Smutek bez důvodu",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Vyhýbání se kontaktu s lidmi",
+      "Silná úzkost"
+    ],
+    "trigger": "Očekávání vyšetření 30.7 a 31.7 -> anticipační stres",
+    "helped": "KBT, odpočinek",
+    "note": "Psychosomatické příznaky: zažívací potíže, únava silná a těžké bolavé oči. Smíšená hypomanie s přivažující depresí. ",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-28",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Vyhýbání se kontaktu s lidmi",
+      "Úzkost"
+    ],
+    "trigger": "Únava",
+    "helped": "KBT, odpolední spánek",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-27",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": "Špatné spaní druhý den -> max 4 hodiny",
+    "helped": NaN,
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-26",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Výpadky paměti / ztráta slov",
+      "Zpomalené myšlení",
+      "Neschopnost se soustředit"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": "Celý den psychicky rozkolísaný mezi depresí a hypomanií, večer silná únava, spánek se silným potem a přerušováním. Probuzení ve stresu",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-25",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Vyhýbání se kontaktu s lidmi",
+      "Úzkost"
+    ],
+    "trigger": "Cesta + odběry krve -> příliš mnoho ruchu, podmětů, sensorické a emoční přetížení, tlak na prsou. Tlak, rozhození, přetížení po zbytek dne.",
+    "helped": "KBT, Kotva (rutina po nějakém nepříjemném stavu (káva, jídlo, klid)",
+    "note": "Silná nepřirozená únava, trávicí potíže",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-24",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "Neklid, nutkání, celková nervozita a tlak",
+    "helped": "KBT 4-7-8, 3x3 + relaxační činnosti, odvrátit pozornost od tlaku a nutkání",
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-23",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Výpadky paměti / ztráta slov",
+      "Pocity viny nebo sebekritiky"
+    ],
+    "trigger": "Opět ve slabší míře tlak, nutkání, pocit něco \"hledat\"",
+    "helped": "KBT, sebeuvědomění ",
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-22",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "procházka venku -> přetížení",
+    "helped": NaN,
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-21",
+    "dominant_mood": "0 Stabilní, neutrální den",
+    "mood_num": 0,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 10.0,
+    "sleep_quality": "Dobrý",
+    "stress": 1,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": NaN,
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-20",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Vysoká",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zvýšený zájem o sexualitu",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Silná únava bez zjevného důvodu",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Nechuť k činnosti i když je známá a příjemná"
+    ],
+    "trigger": "Hypomanie, přetížení, rotzěkanost, nutkání.",
+    "helped": "KBT, odpočinek",
+    "note": "Nemožnost relaxace, nutkání + kompulze, vnitřní chvění, silná večerní bolest hlavy, únava, nausea - přehřátí.",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-19",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Vysoká",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "Silné vnitřní napětí, nutkání, hypomanie, přetížení",
+    "helped": "KBT cvičení, odpočinek",
+    "note": "Neschopnost usnout navzdory únavě, silná roztěkanost, extrémní tlak v těle.",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-18",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit"
+    ],
+    "trigger": "Silné vnitřní napětí, nutkání, hypomanie, přetížení",
+    "helped": "KBT cvičení 4-7-6, uzemnění, odpočinek - částečně",
+    "note": "Zvýšená aktivita celý den, extra nutkání a napětí, přetížení, Večer silná únava, tlak na hrudi, špatné dýchání + studené nohy a nespavost. ",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-17",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 9.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Vzek a podráždění nebo výbušnost",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Vyhýbání se kontaktu s lidmi",
+      "Úzkost",
+      "Zkreslení reality",
+      "Pocity viny nebo sebekritiky"
+    ],
+    "trigger": "Dopolední silné přetížení po krátké procházce. Z 0 na 100%, nutnost izolace a extrémně jemný režim.",
+    "helped": "KBT cvičení, odpočinek, relaxace (i když velmi těžko)",
+    "note": "Dopolední procházka -> hlavní spouštěč přetížení a iritace, nausea, nutnost izolace",
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-07-16",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Vysoká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)"
+    ],
+    "trigger": "Silný neklid, nutkání, hypomanie, mix nabuzení / úvana",
+    "helped": "KBT cvičení, 4-7-8, 3x3, 4-6",
+    "note": "večer extrémní únava, neklid, bolest očí, neschopnost spánku, fyzicky: studené nohy, těžká hlava, tlak na prsou",
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-07-15",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zvýšený zájem o sexualitu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Neschopnost se soustředit",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Zkreslení reality"
+    ],
+    "trigger": "Hypománie -> silná únava + nespavost",
+    "helped": "KBT: 4-7-8, 3x3 uzemnění, věty + další, odpočinek",
+    "note": "Silné vnitřní napětí, neklid. Sklon k impulznímu chování. Pocit že \"něco musím dělat\".",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-14",
+    "dominant_mood": "0 Stabilní, neutrální den",
+    "mood_num": 0,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Zpomalené myšlení"
+    ],
+    "trigger": "Ranní přetížení a únava, doznaky snížení citalopramu",
+    "helped": "KBT, odpočinek",
+    "note": "Zřejmě zklidnění stavu po vysazení citalopramu, výhled na stabilizaci ?",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-13",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 3.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k impulzivnímu chování",
+      "Zrychlené myšlení nebo jednání",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Zpomalené myšlení",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Nespavost, smíšený stav (hypomanie + deprese), silná únava bez možnosti usnout",
+    "helped": "KBT, odpočinek",
+    "note": "Silná nespavost (při pokusu usnout, cukání nohou, rychlé myšlenky), těžko na žaludku, třes rukou (nízká glykémie?), silná únava bez možnosti usnout, přetížení, podráždění",
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-07-12",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zrychlené myšlení nebo jednání",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Úzkost"
+    ],
+    "trigger": "únava, hypomanie",
+    "helped": "KBT cvičení 4-7-8, 4-6, věty, odpočinek",
+    "note": "Přetížení, smíšený stav, večer dominatní silná hypománie, pak prudká únava, dušnost (špatné dýchání, šimrání prstů, nemožnost se plně nadechnout), stále příznaky vysazení Citalopramu",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-11",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání k impulzivnímu chování",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Příval energie bez důvodu",
+      "Pocit „musím něco dělat teď hned“",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Zkreslení reality"
+    ],
+    "trigger": "Hypománie, příznaky vysazování citalopramu",
+    "helped": "KBT (4-7-8 + věty), zpomalení, odpočinek",
+    "note": "přetížení, senzitivita na hluk a podněty. Večer silná únava. Dlouhý spánek.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-10",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Pocit „musím něco dělat teď hned“"
+    ],
+    "depr_symptoms": [
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Úzkost"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": NaN,
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-09",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 14.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Zpomalené myšlení"
+    ],
+    "trigger": "Únava, přetížení",
+    "helped": "KBT, spánek",
+    "note": "Po obědě 8 hodin spánku, překvapivě hluboký a klidný. Po probuzení bolest hlavy, mírná hypomanie, tlak na hrudi, skřípání v hlavě (pravděpodobně v důsledku vysazování Citalopramu). Oložení večerní procházky z důvodu prevence přetížení.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-08",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Nadměrné pocení",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Úzkost"
+    ],
+    "trigger": "Přetížení z podnětů venku",
+    "helped": "KBT (3x3, 4-6), odpočinek",
+    "note": "Přetížení z podnětů venku, přechodné vztekání, nespavost, svědění těla (reakce ?), smíšené symptomy. Hypomanie + únava + podrážděnost. SNÍŽENÍ CITALOPRAMU",
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-07-07",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost",
+      "Strach z budoucnosti / z vlastního stavu"
+    ],
+    "trigger": "Únava, přetížení, frustrace",
+    "helped": "KBT, odpočinek, lehká technická činnost",
+    "note": "Kombinace extrémní únavy a neschopnosti spánku, následný výbuch. Tlak na hrudi, škuby v nohách, žádná možnost relaxace. Psychický kolaps.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-06",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 11.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Výpadky paměti / ztráta slov",
+      "Neschopnost se soustředit"
+    ],
+    "trigger": "Únava",
+    "helped": "KBT, spánek, odpočinek",
+    "note": "Spánek rozdělený na 3x. Silná únava i přes spánek. Citlivost na podměty, ticho a lehká činnost zlepšuje stav. ",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-05",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nadměrné pocení",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "Únava (touha něco dělat, ale nejde to)",
+    "helped": "KBT, odpočinek",
+    "note": "Zvládnutí dne přes únavu. Lehká radost z práce na serveru. Úvahy nad návratem k programování.",
+    "overload": "2 - Střední (vadí mi běžné zvuky, začíná tlak, vyhledávám ticho)"
+  },
+  {
+    "date": "2025-07-04",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Pocit „musím něco dělat teď hned“",
+      "Vzek a podráždění nebo výbušnost",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Silná únava bez zjevného důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Úzkost"
+    ],
+    "trigger": "Výpadek proudu, únava",
+    "helped": "KBT cvičení 4-7-8, odpočinek",
+    "note": "Nausea, studené nohy, smíšený stav. Večer silná únava, nemožnost dělat relaxační věci jako hry, seriál, nebo omalovánky pro dospělé, mozek chce raději systémové a logické činnosti (jako lehké programování, technické věci a podobně)",
+    "overload": "1 - Mírné (lehce vnímám napětí nebo podráždění)"
+  },
+  {
+    "date": "2025-07-03",
+    "dominant_mood": "-3 Těžká deprese, beznaděj",
+    "mood_num": -3,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nadměrné pocení",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Pláč nebo tlak na slzy",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Pocity viny nebo sebekritiky",
+      "Vyhýbání se kontaktu s lidmi",
+      "Silná úzkost",
+      "Zkreslení reality"
+    ],
+    "trigger": "Extrémní únava, neschopnost cokoliv dělat, deprese",
+    "helped": NaN,
+    "note": NaN,
+    "overload": "3 - Silné (musím se izolovat, tlak na hrudi, podráždění, “je toho moc”)"
+  },
+  {
+    "date": "2025-07-02",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Bezmoc / pocit zbytečnosti",
+      "Úzkost"
+    ],
+    "trigger": "Návštva ORL",
+    "helped": "KBT cvičení, večer dýchací vzorec „4-7-8“",
+    "note": "Po náročném dni s návštěvou ORL výrazná únava, ale povedlo se usnout bez extrémních problémů. Střídání hypomanie a podráždění.",
+    "overload": NaN
+  },
+  {
+    "date": "2025-07-01",
+    "dominant_mood": "+1 Lehké zrychlení: říkačky, jemná stimulace, zvládnutelné přebuzení",
+    "mood_num": 1,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 8.0,
+    "sleep_quality": "Průměrný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Zrychlené myšlení nebo jednání",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Zpomalené myšlení",
+      "Neschopnost se soustředit",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "Únava",
+    "helped": "Odpočinek, KBT",
+    "note": "Bolest nosohltanu",
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-30",
+    "dominant_mood": "-3 Těžká deprese, beznaděj",
+    "mood_num": -3,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Vzek a podráždění nebo výbušnost",
+      "Klepání nohou / tělesný neklid",
+      "Nadměrné pocení"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Bezmoc / pocit zbytečnosti",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Pláč nebo tlak na slzy",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Silná úzkost",
+      "Zkreslení reality"
+    ],
+    "trigger": "Nespavost, deprese",
+    "helped": "relaxace, KBT cvičení",
+    "note": NaN,
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-29",
+    "dominant_mood": "+2 Hypománie: rychlené myšlení, klepání nohou, nutkání mluvit, nelze se soustředit, ale únava zůstává",
+    "mood_num": 2,
+    "energy": "Střední",
+    "fatigue": "Silná",
+    "sleep_hours": 3.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost"
+    ],
+    "trigger": "Silně narušené spaní (vysazování citalopramu ?), apatie, hypomanie, únava",
+    "helped": "KBT cvičení, relaxační techniky, věty, večerní procházka",
+    "note": "Smíšený stav s apatií a únavou – ale dominantní byla hypomanická složka, nausea, silná nespavost",
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-28",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Přehrávání imaginárních scénářů",
+      "Vzek a podráždění nebo výbušnost"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Neschopnost se soustředit",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Úzkost",
+      "Zkreslení reality"
+    ],
+    "trigger": "Neschopnost spát, přerušované spaní, krátky vlny hypomanie ",
+    "helped": "KBT cvičení, relaxační činnosti, omezení podmětů",
+    "note": NaN,
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-27",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 2,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": "Silná a nepřirozená únava. (neuroúnava  ??)",
+    "helped": NaN,
+    "note": "Nausea",
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-26",
+    "dominant_mood": "+3 Jasná hypománie: výrazný neklid, nutkání konat, říkat věci, zpívat, impulsivita, přes únavu nelze zastavit",
+    "mood_num": 3,
+    "energy": "Střední",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů",
+      "Nespavost bez tělesné únavy",
+      "Pocit „musím něco dělat teď hned“",
+      "Nadměrné pocení",
+      "Nutkání hledat nové podměty"
+    ],
+    "depr_symptoms": [
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi",
+      "Výpadky paměti / ztráta slov",
+      "Neschopnost se soustředit"
+    ],
+    "trigger": NaN,
+    "helped": NaN,
+    "note": "Nausea",
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-25",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 4.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Silná úzkost",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": "Stále rozhozená stabilita z pondělí, úterý",
+    "helped": "Relaxační činnosti, KBT, odpočinek, klid",
+    "note": "Zvýšení Lamotrigin (+ 1 tableta večer), lehká nausea",
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-24",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 5,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Silné přemýšlení o sociálních interakcích",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Strach z budoucnosti / z vlastního stavu",
+      "Pocity viny nebo sebekritiky",
+      "Úzkost",
+      "Vyhýbání se kontaktu s lidmi"
+    ],
+    "trigger": "Magnetická rezonance, Návštěva lékaře (opět po včerejší návštěvě), panický atak na magnetické rezonanci, nevyspalost, stres",
+    "helped": "KBT cvičení (věty, dech 4-6), spánek",
+    "note": "Snížení Citalopram (- půl tablety)",
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-23",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Přehrávání imaginárních scénářů",
+      "Silné přemýšlení o sociálních interakcích"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost",
+      "Nechuť k činnosti i když je známá a příjemná"
+    ],
+    "trigger": "Návštěva lékaře, stres z okolí venku, nevyspání, stres",
+    "helped": "KBT cvičení (dech, věty, uzemnění), vyhnutí se všem silnějším podmětům stimulující mozek, relaxační činnosti, ticho",
+    "note": NaN,
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-22",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Střední",
+    "sleep_hours": 5.0,
+    "sleep_quality": "Špatný",
+    "stress": 4,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Hledání něčeho „nového“ / dopaminový chtíč",
+      "Zrychlené myšlení nebo jednání",
+      "Přehrávání imaginárních scénářů"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Výpadky paměti / ztráta slov",
+      "Úzkost"
+    ],
+    "trigger": "Očekávání pondělní návštěvy lékaře",
+    "helped": "KBT - dechové cvičení, uzemnění, věty, lehká meditace",
+    "note": NaN,
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-21",
+    "dominant_mood": "-2 Smutek, útlum, stažení",
+    "mood_num": -2,
+    "energy": "Nízká",
+    "fatigue": "Střední",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Špatný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Přehrávání imaginárních scénářů",
+      "Vzek a podráždění nebo výbušnost",
+      "Klepání nohou / tělesný neklid"
+    ],
+    "depr_symptoms": [
+      "Tlak na prsou / tíha / uzel v hrudi",
+      "Apatie (nezájem o běžné věci)",
+      "Smutek bez důvodu",
+      "Myšlenky na to že to nemá cenu / beznaděj",
+      "Neschopnost se soustředit",
+      "Zpomalené myšlení",
+      "Úzkost"
+    ],
+    "trigger": "Nespavost. Obava z příštího týdne a návštěv lékařů. ",
+    "helped": "Dechové cvičení - denní mikrorutina, odpolední spánek.",
+    "note": NaN,
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-20",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Střední",
+    "sleep_hours": 7.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola"
+    ],
+    "depr_symptoms": [
+      "Smutek bez důvodu",
+      "Apatie (nezájem o běžné věci)",
+      "Silná únava bez zjevného důvodu",
+      "Neschopnost se soustředit",
+      "Úzkost",
+      "Výpadky paměti / ztráta slov"
+    ],
+    "trigger": "Únava, úzkost",
+    "helped": "Dechové cvičení, věty, odpolední spánek",
+    "note": NaN,
+    "overload": NaN
+  },
+  {
+    "date": "2025-06-19",
+    "dominant_mood": "-1 Mírná apatie, úzkost",
+    "mood_num": -1,
+    "energy": "Nízká",
+    "fatigue": "Silná",
+    "sleep_hours": 6.0,
+    "sleep_quality": "Průměrný",
+    "stress": 3,
+    "hypo_symptoms": [
+      "Klepání nohou / tělesný neklid",
+      "Říkanky / zpívání si dokola",
+      "Nutkání k mluvení nahlas i bez kontextu",
+      "Zrychlené myšlení nebo jednání"
+    ],
+    "depr_symptoms": [
+      "Silná únava bez zjevného důvodu",
+      "Neschopnost se soustředit",
+      "Nechuť k činnosti i když je známá a příjemná",
+      "Apatie (nezájem o běžné věci)"
+    ],
+    "trigger": "Porucha PC - a oprava",
+    "helped": "Dechové cvičení, věty, odpočinek a spánek",
+    "note": NaN,
+    "overload": NaN
+  }
+];
+
+// Helpers
+const parseDate = (s) => new Date(s);
+const fmt = (n, digits=1) => isFinite(n) ? Number(n).toFixed(digits) : "–";
+
+function inRange(d, from, to) {
+  if (from && d < from) return false;
+  if (to && d > to) return false;
+  return true;
+}
+
+function weekKey(d) {
+  const date = new Date(d);
+  const day = (date.getDay()+6)%7;
+  const monday = new Date(date);
+  monday.setDate(date.getDate()-day);
+  return monday.toISOString().slice(0,10);
+}
+
+function moodClass(m) {
+  if (m <= -2) return 'mood--neg2';
+  if (m == -1) return 'mood--neg1';
+  if (m == 0 || m == null) return 'mood--zero';
+  if (m == 1) return 'mood--pos1';
+  return 'mood--pos2';
+}
+
+function computeKPIs(rows) {
+  const moods = rows.map(r=>r.mood_num).filter(x=>Number.isFinite(x));
+  const stress = rows.map(r=>r.stress).filter(x=>Number.isFinite(x));
+  const sleep = rows.map(r=>r.sleep_hours).filter(x=>Number.isFinite(x));
+  const overload = rows.filter(r=>r.overload && r.overload.trim() !== "");
+  return {
+    avgMood: moods.length? moods.reduce((a,b)=>a+b,0)/moods.length : NaN,
+    avgStress: stress.length? stress.reduce((a,b)=>a+b,0)/stress.length : NaN,
+    avgSleep: sleep.length? sleep.reduce((a,b)=>a+b,0)/sleep.length : NaN,
+    overloadCount: overload.length
+  };
+}
+
+function renderKPIs(kpis) {
+  document.getElementById('avgMood').textContent = fmt(kpis.avgMood, 2);
+  document.getElementById('avgStress').textContent = fmt(kpis.avgStress, 2);
+  document.getElementById('avgSleep').textContent = fmt(kpis.avgSleep, 2);
+  document.getElementById('overloadCount').textContent = kpis.overloadCount;
+}
+
+function drawSparkline(rows) {
+  const svg = document.getElementById('sparkline');
+  const w = svg.clientWidth || svg.getBoundingClientRect().width;
+  const h = svg.clientHeight || 80;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = '';
+  if (!rows.length) return;
+  const sorted = [...rows].sort((a,b)=> new Date(a.date)-new Date(b.date));
+  const moods = sorted.map(r => Number.isFinite(r.mood_num)? r.mood_num : 0);
+  const xs = sorted.map((_,i)=> i/(sorted.length-1||1)*(w-20)+10);
+  const minY = -2, maxY = 2;
+  const yScale = v => h - ((v-minY)/(maxY-minY))*(h-20) - 10;
+
+  sorted.forEach((r,i)=> {
+    const c = r.mood_num<=-2? '#ff9aa2' : r.mood_num<=-1? '#caa8ff' : r.mood_num<=0? '#a5f0ff' : r.mood_num==1? '#b7ffcc' : '#d7ff9e';
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', xs[i]);
+    circle.setAttribute('cy', yScale(moods[i]));
+    circle.setAttribute('r', 2.5);
+    circle.setAttribute('fill', c);
+    svg.appendChild(circle);
+  });
+  // Trendline (least squares)
+  const n = moods.length;
+  const xsNorm = xs.map(x => (x-10)/(w-20));
+  const xbar = xsNorm.reduce((a,b)=>a+b,0)/n;
+  const ybar = moods.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  for (let i=0;i<n;i++) { num += (xsNorm[i]-xbar)*(moods[i]-ybar); den += (xsNorm[i]-xbar)**2; }
+  const m = den? num/den : 0;
+  const b = ybar - m*xbar;
+  const y1 = m*0 + b, y2 = m*1 + b;
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', 10); line.setAttribute('x2', w-10);
+  line.setAttribute('y1', yScale(y1)); line.setAttribute('y2', yScale(y2));
+  line.setAttribute('stroke', '#8aa0b4'); line.setAttribute('stroke-width', '1.5'); line.setAttribute('stroke-dasharray', '4 3');
+  svg.appendChild(line);
+}
+
+function stressDots(n) {
+  let s = '<div class="stress-dots">';
+  for (let i=1;i<=5;i++) s += `<span class="${i<=n?'on':''}"></span>`;
+  s += '</div>';
+  return s;
+}
+
+function clampText(t, max=160) {
+  if (!t) return '';
+  return t.length>max? t.slice(0,max).trim()+'…' : t;
+}
+
+function makeRow(r) {
+  const overload = r.overload? `<span class="overload-badge" title="${r.overload.replace(/"/g,'&quot;')}">${r.overload.split('(')[0].trim()}</span>` : '';
+  const chips = [];
+  if (r.trigger) chips.push(`<span class="chip">Spouštěč: ${r.trigger}</span>`);
+  if (r.helped) chips.push(`<span class="chip">Pomohlo: ${r.helped}</span>`);
+  const hypo = (r.hypo_symptoms||[]).filter(Boolean);
+  const depr = (r.depr_symptoms||[]).filter(Boolean);
+
+  return `
+  <details>
+    <summary class="row">
+      <div class="date">${r.date}</div>
+      <div class="mood-badge ${moodClass(r.mood_num)}" title="${r.dominant_mood}">${r.mood_num ?? '–'}</div>
+      <div>${r.energy||'–'}</div>
+      <div>${r.fatigue||'–'}</div>
+      <div>${(r.sleep_hours??'–')} h</div>
+      <div>${stressDots(r.stress||0)}</div>
+      <div><span class="exp">▸</span></div>
+    </summary>
+    <div style="padding: 0 12px 12px;">
+      <div class="chips" style="margin-bottom:8px;">${overload} ${chips.join(' ')}</div>
+      ${r.note? `<div class="note"><strong>Poznámka:</strong> ${clampText(r.note, 600)}</div>`:''}
+      ${(hypo.length||depr.length)? `
+        <div style="display:grid; gap:6px; grid-template-columns: repeat(2,minmax(0,1fr)); margin-top:10px;">
+          <div>
+            <div class="label" style="color:var(--muted); font-size:12px; margin-bottom:6px;">Hypomanické příznaky</div>
+            ${hypo.length? '<ul>'+ hypo.map(s=>`<li>${s}</li>`).join('') + '</ul>' : '<div class="note">—</div>'}
+          </div>
+          <div>
+            <div class="label" style="color:var(--muted); font-size:12px; margin-bottom:6px;">Depresivní příznaky</div>
+            ${depr.length? '<ul>'+ depr.map(s=>`<li>${s}</li>`).join('') + '</ul>' : '<div class="note">—</div>'}
+          </div>
+        </div>
+      `: ''}
+    </div>
+  </details>`;
+}
+
+function groupByWeek(rows) {
+  const groups = new Map();
+  rows.forEach(r=> {
+    const k = weekKey(r.date);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  });
+  return Array.from(groups.entries()).sort((a,b)=> new Date(b[0]) - new Date(a[0]));
+}
+
+function renderList(rows, weekly=false) {
+  const el = document.getElementById('list');
+  el.innerHTML = '';
+  if (!rows.length) {
+    el.innerHTML = '<div class="card" style="padding:16px">Žádná data pro zadaný filtr.</div>';
+    return;
+  }
+  if (weekly) {
+    const groups = groupByWeek(rows);
+    groups.forEach(([week, items])=> {
+      const head = document.createElement('div');
+      head.className = 'week-head';
+      const end = new Date(week); end.setDate(end.getDate()+6);
+      head.textContent = `Týden ${week} – ${end.toISOString().slice(0,10)}  ·  ${items.length} dnů`;
+      el.appendChild(head);
+      items.sort((a,b)=> new Date(b.date)-new Date(a.date));
+      items.forEach(r => {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = makeRow(r);
+        el.appendChild(wrapper.firstElementChild);
+      });
+    });
+  } else {
+    rows.sort((a,b)=> new Date(b.date)-new Date(a.date));
+    rows.forEach(r => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = makeRow(r);
+      el.appendChild(wrapper.firstElementChild);
+    });
+  }
+}
+
+function applyFilters() {
+  const from = document.getElementById('fromDate').value ? new Date(document.getElementById('fromDate').value) : null;
+  const to = document.getElementById('toDate').value ? new Date(document.getElementById('toDate').value) : null;
+  const q = document.getElementById('search').value.toLowerCase();
+  const mode = document.getElementById('quickFilter').value;
+  let rows = [...DATA];
+
+  rows = rows.filter(r => inRange(new Date(r.date), from, to));
+  if (mode === 'hasTrigger') rows = rows.filter(r => r.trigger && r.trigger.trim());
+  if (mode === 'hasOverload') rows = rows.filter(r => r.overload && r.overload.trim());
+  if (mode === 'hasNote') rows = rows.filter(r => r.note && r.note.trim());
+  if (q) rows = rows.filter(r => (r.note||'').toLowerCase().includes(q) || (r.trigger||'').toLowerCase().includes(q));
+
+  renderKPIs(computeKPIs(rows));
+  drawSparkline(rows);
+  renderList(rows, document.getElementById('groupWeeks').classList.contains('active'));
+}
+
+document.getElementById('groupWeeks').addEventListener('click', (e)=> {
+  e.currentTarget.classList.toggle('active');
+  applyFilters();
+});
+document.getElementById('compactMode').addEventListener('click', (e)=> {
+  e.currentTarget.classList.toggle('active');
+  const compact = e.currentTarget.classList.contains('active');
+  if (compact) {
+    const style = document.createElement('style');
+    style.id = 'compact-style';
+    style.textContent = `
+      .row { grid-template-columns: 90px 60px 70px 70px 80px 1fr 26px; padding:8px; }
+      .kpi .value { font-size: 20px; }
+      .spark { height: 70px; }
+    `;
+    document.head.appendChild(style);
+  } else {
+    const s = document.getElementById('compact-style');
+    if (s) s.remove();
+  }
+});
+
+['fromDate','toDate','quickFilter','search'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyFilters);
+});
+
+(function init(){
+  if (DATA.length) {
+    const dates = DATA.map(r=> new Date(r.date)).sort((a,b)=> a-b);
+    const last = dates[dates.length-1];
+    const start = new Date(last); start.setDate(start.getDate()-29);
+    const to = last.toISOString().slice(0,10);
+    const from = start.toISOString().slice(0,10);
+    document.getElementById('fromDate').value = from;
+    document.getElementById('toDate').value = to;
+  }
+  applyFilters();
+})();
+</script>
+</body>
+</html>

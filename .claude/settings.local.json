@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/martz/Desktop/apps/tracker-app/**)",
+      "Read(//c/Users/martz/Downloads/**)",
+      "Bash(npm install date-fns)",
+      "Bash(npm run dev)",
+      "Bash(curl -v http://localhost:3002/api/mood)",
+      "Bash(npx tsc:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(/dev/null)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
