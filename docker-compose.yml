@@ -8,10 +8,11 @@ services:
     container_name: noco-view
     ports:
       - "3448:3000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - AUTH_PASSCODE=120290
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
