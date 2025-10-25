@@ -29,7 +29,7 @@ export default function AIAnalysis({ entries }: AIAnalysisProps) {
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<any>(null);
   const [usage, setUsage] = useState<any>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<SectionKey>>(new Set(['overview']));
+  const [expandedSections, setExpandedSections] = useState<Set<SectionKey>>(new Set<SectionKey>(['overview']));
 
   // Generate cache key based on period (last 3 months of current entries)
   const generateCacheKey = () => {
