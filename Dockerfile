@@ -39,7 +39,7 @@ RUN adduser -S nextjs -u 1001
 # Set working directory
 WORKDIR /app
 
-# Copy built application from build stage (standalone includes all dependencies)
+# Copy built application from build stage
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
@@ -49,8 +49,15 @@ COPY --chown=nextjs:nodejs healthcheck.js ./
 COPY --chown=nextjs:nodejs start.sh ./
 RUN chmod +x start.sh
 
+# Install production dependencies that standalone build didn't trace
+# (API route dependencies are sometimes missed by file tracing)
+RUN chown -R nextjs:nodejs /app
+
 # Switch to non-root user
 USER nextjs
+
+# Install missing dependencies
+RUN npm install --production --ignore-scripts
 
 # Expose port
 EXPOSE 3000
