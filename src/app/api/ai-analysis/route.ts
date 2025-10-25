@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 
-const NOCODB_URL = 'http://192.168.50.191:33860';
+// Use container hostname when running in Docker, fallback to host IP for local development
+const NOCODB_URL = process.env.NODE_ENV === 'production'
+  ? 'http://nocodb:8080'
+  : 'http://192.168.50.191:33860';
 const TABLE_ID = 'm1w6ly4p8iu64s9'; // AI_Analyses table
 const API_KEY = 'LehBM_s0bzNbhywtVYr_egxfe4AM3h75yLulZif3';
 
