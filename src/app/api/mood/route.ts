@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { MoodApiResponse } from '@/types/mood';
 
-const NOCODB_URL = 'http://192.168.50.191:33860';
+// Use container hostname when running in Docker, fallback to host IP for local development
+const NOCODB_URL = process.env.NODE_ENV === 'production'
+  ? 'http://nocodb:8080'
+  : 'http://192.168.50.191:33860';
 const TABLE_ID = 'mvj3iz12lui2i2h';
 const API_KEY = 'LehBM_s0bzNbhywtVYr_egxfe4AM3h75yLulZif3';
 
