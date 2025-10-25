@@ -159,8 +159,7 @@ Proveď analýzu a vrať výsledek ve formátu JSON včetně markdown_summary.`;
       throw new Error('No message in OpenAI response');
     }
 
-    // GPT-5 reasoning models may have content in different locations
-    const result = message.content || message.text;
+    const result = message.content;
 
     if (!result) {
       console.error('Full message object:', message);
