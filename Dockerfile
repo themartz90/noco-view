@@ -39,16 +39,13 @@ RUN adduser -S nextjs -u 1001
 # Set working directory
 WORKDIR /app
 
-# Copy package files and install production dependencies
-COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy built application from build stage
+# Copy built application from build stage (standalone includes all dependencies)
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
-# Copy startup script
+# Copy necessary runtime files
+COPY --chown=nextjs:nodejs healthcheck.js ./
 COPY --chown=nextjs:nodejs start.sh ./
 RUN chmod +x start.sh
 
