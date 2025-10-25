@@ -22,3 +22,13 @@ services:
     labels:
       - "com.docker.compose.project=noco-view"
       - "com.docker.compose.service=noco-view"
+    networks:
+      - noco-view-network
+
+networks:
+  noco-view-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1
