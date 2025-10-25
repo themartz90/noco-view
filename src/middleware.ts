@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Allow access to auth page, auth API, and health endpoint
+  // Allow access to auth page, auth API, health endpoint, and internal API routes
   if (
     request.nextUrl.pathname.startsWith('/auth') ||
     request.nextUrl.pathname.startsWith('/api/auth') ||
     request.nextUrl.pathname.startsWith('/api/health') ||
+    request.nextUrl.pathname.startsWith('/api/mood') ||
+    request.nextUrl.pathname.startsWith('/api/analyze') ||
+    request.nextUrl.pathname.startsWith('/api/ai-analysis') ||
+    request.nextUrl.pathname.startsWith('/api/test-save') ||
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname.startsWith('/favicon') ||
     request.nextUrl.pathname.startsWith('/logo.png')

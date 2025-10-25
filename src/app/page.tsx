@@ -5,6 +5,7 @@ import { MoodEntry, MoodApiResponse } from '@/types/mood';
 import TimelineEntry from '@/components/TimelineEntry';
 import KpiSummary from '@/components/KpiSummary';
 import MoodChart from '@/components/MoodChart';
+import AIAnalysis from '@/components/AIAnalysis';
 import { Filter, Calendar, Loader2 } from 'lucide-react';
 import { subMonths, isAfter, parseISO, isBefore } from 'date-fns';
 
@@ -182,6 +183,13 @@ export default function Home() {
       {!loading && !error && filteredEntries.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
           <MoodChart entries={filteredEntries} />
+        </div>
+      )}
+
+      {/* AI Analysis */}
+      {!loading && !error && entries.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+          <AIAnalysis entries={entries} />
         </div>
       )}
 
