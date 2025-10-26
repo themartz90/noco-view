@@ -16,10 +16,12 @@ A Next.js application for viewing bipolar disorder mood diary data from NocoDB, 
 
 ## Current Version
 
-**Version**: 1.0.0 (Released 2025-10-23)
+**Version**: 1.0.1 (Released 2025-10-25)
 - GitHub: https://github.com/themartz90/noco-view
-- Commit: `43d04b5`
-- Tag: `v1.0.0`
+- Latest Commit: `b0b96ad`
+- Previous Tag: `v1.0.0` (2025-10-23)
+
+**Status**: Fully operational with Docker networking fixes and AI analysis feature working
 
 ---
 
@@ -30,9 +32,15 @@ A Next.js application for viewing bipolar disorder mood diary data from NocoDB, 
 - **Icons**: Lucide React 0.263.1
 - **Date Handling**: date-fns 2.30.0
 - **Data Source**: NocoDB API
-  - Server: `http://192.168.50.191:33860`
-  - Table ID: `mvj3iz12lui2i2h`
+  - Server: `http://192.168.50.191:33860` (dev) / `http://nocodb:8080` (prod)
+  - Table ID (Mood): `mvj3iz12lui2i2h`
+  - Table ID (AI Analysis): `m1w6ly4p8iu64s9`
   - API Key: `LehBM_s0bzNbhywtVYr_egxfe4AM3h75yLulZif3`
+- **AI Analysis**: OpenAI GPT-4.1-mini (v1.0.1)
+  - Model: `gpt-4.1-mini`
+  - Temperature: 0.2
+  - Max tokens: 8000
+  - Response format: JSON with Czech markdown summary
 - **Authentication**: Cookie-based passcode (90-day retention)
 - **Deployment**: Docker with health checks and automated backups
 
@@ -58,6 +66,13 @@ A Next.js application for viewing bipolar disorder mood diary data from NocoDB, 
 6. **Expandable Timeline Entries** - Click entire card to expand/collapse
 7. **Czech Language** - All labels and interface in Czech
 8. **Logo Integration** - Brain icon in header
+9. **AI Clinical Analysis** (v1.0.1) - GPT-4.1-mini powered psychiatric summary:
+   - Analyzes last 3 months of mood data
+   - Identifies patterns, triggers, and interventions
+   - Extracts event categories with post-event mood trends
+   - Generates red flags and discussion points for psychiatrist
+   - Caches results in NocoDB for cross-device access
+   - Czech language clinical report
 
 ### 🔒 Security Features (v1.0.0)
 
@@ -96,6 +111,97 @@ A Next.js application for viewing bipolar disorder mood diary data from NocoDB, 
    - Standalone output mode
    - Non-root container user
    - Image cleanup on deploy
+
+### 🐳 Docker Networking (v1.0.1 - 2025-10-25)
+
+**CRITICAL**: Docker network configuration to avoid Tailscale VPN conflicts
+
+#### Problem Discovered (2025-10-25)
+- Docker was auto-assigning `192.168.0.x` subnet which conflicts with Tailscale VPN on `192.168.0.1`
+- Caused "Connection reset by peer" and complete service unavailability
+- Application would start but refuse all HTTP connections
+
+#### Solution Implemented
+1. **Custom Bridge Network** in `docker-compose.yml`:
+   ```yaml
+   networks:
+     noco-view-network:
+       driver: bridge
+       ipam:
+         config:
+           - subnet: 172.35.0.0/16
+             gateway: 172.35.0.1
+     overseerr-net:
+       external: true  # Shared network with NocoDB container
+   ```
+
+2. **Dual Network Attachment**:
+   - `noco-view-network`: Custom network to avoid Tailscale conflicts
+   - `overseerr-net`: External network to connect with NocoDB container
+
+3. **Container-to-Container Communication**:
+   - NocoDB runs in `overseerr-net` Docker network
+   - API routes use container hostname in production: `http://nocodb:8080`
+   - Falls back to LAN IP for local development: `http://192.168.50.191:33860`
+
+#### Files Updated for Network Connectivity
+- `docker-compose.yml`: Network configuration + `extra_hosts` for host gateway
+- `src/app/api/mood/route.ts`: Dynamic NOCODB_URL based on environment
+- `src/app/api/ai-analysis/route.ts`: Dynamic NOCODB_URL based on environment
+
+#### Docker Daemon Configuration (Server)
+**Prevent future subnet conflicts** by configuring default address pools:
+
+Location: `/etc/docker/daemon.json`
+```json
+{
+  "hosts": ["tcp://0.0.0.0:2375", "unix:///var/run/docker.sock"],
+  "default-address-pools": [
+    {
+      "base": "172.16.0.0/12",
+      "size": 24
+    },
+    {
+      "base": "10.10.0.0/16",
+      "size": 24
+    }
+  ]
+}
+```
+
+**Apply**: `sudo systemctl restart docker`
+
+This ensures Docker only uses `172.16.x.x` and `10.10.x.x` ranges, avoiding:
+- `192.168.0.x` (Tailscale VPN)
+- `192.168.1.x` (Common home routers)
+- `192.168.50.x` (Local LAN)
+
+#### Environment Variables Fix
+**Problem**: OPENAI_API_KEY not loading from docker-compose environment
+**Solution**: Use `env_file` directive in `docker-compose.yml`:
+```yaml
+services:
+  noco-view:
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - AUTH_PASSCODE=120290
+```
+
+#### Verification Commands
+```bash
+# Check container networks
+docker inspect noco-view | grep -A 20 '"Networks"'
+
+# Test NocoDB connectivity from container
+docker exec noco-view wget -T 2 -O- http://nocodb:8080/api/v2
+
+# Test API endpoints
+curl http://localhost:3448/api/health
+curl http://localhost:3448/api/mood | head -c 200
+curl "http://localhost:3448/api/ai-analysis?period_key=test"
+```
 
 ---
 
@@ -452,19 +558,41 @@ Three-tier information architecture:
 
 ## Known Issues & Considerations
 
-### Přetížení Parser Bug (Fixed)
+### Docker Network Conflict with Tailscale VPN (Fixed v1.0.1)
+- **Issue**: Docker auto-assigned `192.168.0.x` subnet conflicting with Tailscale VPN
+- **Symptoms**: "Connection reset by peer", application starts but refuses all HTTP connections
+- **Root cause**: Docker's default network overlapped with Tailscale's `192.168.0.1` gateway
+- **Fix**: Custom bridge network on `172.35.0.0/16` subnet
+- **Prevention**: Docker daemon configured with default address pools (requires manual server setup)
+- **Location**: `docker-compose.yml`, `/etc/docker/daemon.json` on server
+
+### NocoDB Container Connectivity (Fixed v1.0.1)
+- **Issue**: Container couldn't reach NocoDB at LAN IP `192.168.50.191:33860`
+- **Symptoms**: "Connect Timeout Error" on `/api/mood` and `/api/ai-analysis` endpoints
+- **Root cause**: Docker bridge network isolation from host LAN
+- **Fix**: Connected to `overseerr-net` shared network, use container hostname in production
+- **Location**: `docker-compose.yml`, `src/app/api/mood/route.ts`, `src/app/api/ai-analysis/route.ts`
+
+### Environment Variables Not Loading (Fixed v1.0.1)
+- **Issue**: OPENAI_API_KEY not available in container despite being in docker-compose environment
+- **Symptoms**: AI analysis feature failed with missing API key
+- **Root cause**: Shell variable substitution didn't work as expected
+- **Fix**: Use `env_file` directive instead of inline environment variables
+- **Location**: `docker-compose.yml`
+
+### Přetížení Parser Bug (Fixed v1.0.0)
 - **Issue**: "0 - Žádné" displayed as "0" twice
 - **Root cause**: Regex only matched format with parentheses
 - **Fix**: Added fallback regex for simple format
 - **Location**: `src/components/TimelineEntry.tsx`
 
-### Average State Calculation (Fixed)
+### Average State Calculation (Fixed v1.0.0)
 - **Issue**: Showed "Stabilní" when no stable days existed
 - **Root cause**: Gap in thresholds (e.g., -0.7 fell through)
 - **Fix**: Changed to `mood < 0` for any depression, `mood === 0` for stable
 - **Result**: Accurate 7-level classification
 
-### Port Management
+### Port Management (Resolved)
 - **Issue**: Multiple dev servers running on different ports
 - **Solution**: Kill old processes, use single server
 - **Production**: Fixed to 3448
@@ -562,6 +690,40 @@ docker compose ps               # List containers
 
 ## Version History
 
+### v1.0.1 (2025-10-25)
+**Critical Fix** - Docker networking and NocoDB connectivity
+
+**Issues Fixed**:
+1. **Docker Network Conflict**: Resolved Tailscale VPN subnet collision
+   - Docker was auto-assigning `192.168.0.x` conflicting with Tailscale on `192.168.0.1`
+   - Application would start but refuse all connections ("Connection reset by peer")
+   - Solution: Custom bridge network on `172.35.0.0/16` subnet
+
+2. **NocoDB Connectivity**: Container couldn't reach NocoDB server
+   - Problem: Docker bridge network isolated from host LAN
+   - Solution: Connected container to `overseerr-net` shared with NocoDB
+   - API routes now use container hostname (`nocodb:8080`) in production
+
+3. **Environment Variables**: OPENAI_API_KEY not loading
+   - Changed from shell variable substitution to `env_file` directive
+   - AI analysis feature now functional
+
+**Files Changed**:
+- `docker-compose.yml`: Network configuration, env_file directive
+- `src/app/api/mood/route.ts`: Dynamic NOCODB_URL
+- `src/app/api/ai-analysis/route.ts`: Dynamic NOCODB_URL
+
+**Server Configuration**:
+- Added Docker daemon default address pools to prevent future conflicts
+- Script created: `/tmp/update-docker-daemon.sh` (requires sudo to run)
+
+**Commits**:
+- `c3fd9ef` - Use 172.35.0.0/16 subnet (avoid all conflicts)
+- `b905b12` - Add host network access for NocoDB connectivity
+- `31dc497` - Connect to NocoDB via Docker network
+- `94eeb0d` - Load environment variables from .env file
+- `b0b96ad` - Update ai-analysis endpoint to use Docker network
+
 ### v1.0.0 (2025-10-23)
 **Initial Release** - Feature-complete mood diary viewer
 
@@ -637,6 +799,6 @@ Three AI models contributed UI mockups that were analyzed and combined:
 
 ---
 
-*Last updated: 2025-10-23*
-*Version 1.0.0 released*
+*Last updated: 2025-10-25*
+*Version 1.0.1 - Critical Docker networking fixes*
 *Development session with Claude Code*
