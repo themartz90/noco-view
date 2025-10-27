@@ -32,19 +32,26 @@ export default function AIAnalysis({ entries }: AIAnalysisProps) {
   const [expandedSections, setExpandedSections] = useState<Set<SectionKey>>(new Set<SectionKey>(['overview']));
 
   // Generate cache key based on period (last 3 months of current entries)
-  const generateCacheKey = () => {
+  const generateCacheKey = async () => {
     if (entries.length === 0) return '';
-    const dates = entries.map(e => e.Datum).sort();
-    return `${dates[0]}_${dates[dates.length - 1]}_${entries.length}`;
+
+    // IMPORTANT: Must use the same filtering as runAnalysis
+    const { getLastThreeMonths } = await import('@/lib/aiTransformer');
+    const threeMonthEntries = getLastThreeMonths(entries);
+
+    if (threeMonthEntries.length === 0) return '';
+
+    const dates = threeMonthEntries.map(e => e.Datum).sort();
+    return `${dates[0]}_${dates[dates.length - 1]}_${threeMonthEntries.length}`;
   };
 
   // Load analysis from NocoDB on mount
   useEffect(() => {
-    const cacheKey = generateCacheKey();
-    if (!cacheKey) return;
-
     const fetchAnalysis = async () => {
       try {
+        const cacheKey = await generateCacheKey();
+        if (!cacheKey) return;
+
         const response = await fetch(`/api/ai-analysis?period_key=${encodeURIComponent(cacheKey)}`);
         if (!response.ok) {
           console.error('Failed to fetch analysis');
@@ -102,11 +109,12 @@ export default function AIAnalysis({ entries }: AIAnalysisProps) {
 
         // Save to NocoDB for cross-device access
         try {
+          const cacheKey = await generateCacheKey();
           const saveResponse = await fetch('/api/ai-analysis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              period_key: generateCacheKey(),
+              period_key: cacheKey,
               analysis: result.analysis,
               usage: result.usage,
             }),
