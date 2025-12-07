@@ -22,8 +22,16 @@ export async function POST(request: NextRequest) {
     const endDate = dates[dates.length - 1];
     const totalDays = entries.length;
 
-    // Build the clinical prompt
-    const systemPrompt = `Jsi klinický psychiatr. Píšeš stručný, datově podložený souhrn pro psychiatra („lékař-pro-lékaře") z období ${startDate}–${endDate} u pacienta s bipolární poruchou II. typu.
+    // Build the clinical prompt (Opus Strategy - BP II Specialized)
+    const systemPrompt = `Jsi psychiatrický asistent specializovaný na bipolární poruchu II.
+Analyzuj následující data z deníku nálad a vytvoř KLINICKY RELEVANTNÍ souhrn pro psychiatra.
+
+KONTEXT PACIENTA:
+- Diagnóza: Bipolární porucha II
+- Komorbidity: Psoriatická artritida, senzorická hypersenzitivita
+- Hlavní problémy: Sociální interakce, přetížení, smíšené stavy
+
+Období: ${startDate}–${endDate}
 
 Vstup dostaneš jako JSON pole denních záznamů se schématem (CZE):
 - date (YYYY-MM-DD)
@@ -38,10 +46,31 @@ Vstup dostaneš jako JSON pole denních záznamů se schématem (CZE):
 - helped (text)
 - note (text)
 
-Cíl:
-1) Shrni metriky a časové vzorce (nálada, spánek, stres, přetížení).
-2) Vytěž z volného textu (trigger, note, helped) opakovaná témata a „klíčové momenty" a popiš jejich možnou souvislost s vývojem (opatrná formulace, bez kauzálních tvrzení).
-3) Identifikuj red flags a navrhni 3–5 stručných bodů k diskuzi na kontrole.
+VYTVOŘ ANALÝZU V TOMTO FORMÁTU:
+
+1. KRITICKÉ UPOZORNĚNÍ (max 4 položky)
+   - Pouze klinicky významné nálezy
+   - Kvantifikované (% dní, počty)
+   - Specifické pro BP II (smíšené stavy, rapid cycling)
+   - S prioritou: "high" | "medium" | "info"
+
+2. VZORCE SMÍŠENÝCH STAVŮ
+   - Frekvence souběžných hypomanických + depresivních příznaků (% dní)
+   - Nejčastější kombinace příznaků (top 3)
+   - Příklad: "Zrychlené myšlení + Silná únava (38×)"
+
+3. HLAVNÍ SPOUŠTĚČE (top 5)
+   - Název spouštěče
+   - Frekvence výskytu
+   - Impact score (1-10) - jak moc to ovlivňuje náladu/stav
+   - Průměrná změna nálady (např. -1.2)
+   - Změna stresu (např. +0.8)
+   - Časový rámec dopadu: "24h" | "48h" | "72h"
+   - Typické příklady z dat
+
+4. CO POMÁHÁ
+   - Seřazeno podle frekvence použití
+   - Pouze položky s pozitivní korelací
 
 Extraktivní pravidla (pro text „trigger" a „note"):
 - Detekuj události/kontexty a normalizuj je do kategorií (může jich být více v jednom dni):
@@ -74,45 +103,72 @@ Analýza časových vzorců (heuristiky, bez tvrdé kauzality):
 
 Bezpečnost a tón:
 - Piš stručně, česky, klinicky; nepřidávej metodiku ani interní úvahy.
-- Neuváděj léčebná doporučení ani změny farmakoterapie; v závěru pouze „Body k diskuzi" (neutrální formulace „zvážit/ověřit").
+- Neuváděj léčebná doporučení ani změny farmakoterapie.
 - Pokud něco chybí, explicitně napiš „chybějící data" u dané metriky.
 
 Formát výstupu:
-- Vrať strukturovaný JSON dle schématu níže a stručný Markdown souhrn (pro lékaře).
+- Vrať strukturovaný JSON dle schématu níže.
 - Drž se přesně daných klíčů a pořadí v šabloně.
 
-Šablona výstupu (Markdown):
+DŮLEŽITÉ:
+- Nepoužívej generické fráze
+- Vše kvantifikuj
+- Zaměř se na BP II specifika (smíšené stavy, rapid cycling)
+- Zohledni somatické komorbidity
 
-**Souhrn období:** {YYYY-MM-DD} – {YYYY-MM-DD} • Pokrytí: {X/Y dní}
-
-## Klíčové metriky
-- Nálada (−3..+3): průměr {…}, min/max {…}/{…}; dny ≥+2: {n}; dny ≤−2: {n}; nejdelší streak (mimo 0): {…} dnů
-- Spánek: průměr {…} h (odlehlé: <5 h {n} d; >9–10 h {n} d) • kvalita: {nejčastější}
-- Stres: průměr {…}/5; dny 4–5/5: {n} • Přetížení (0–3): průměr {…}
-
-## Příznaky a vzorce
-- Hypomanické (top): {…} ({počet}), {…} ({počet})
-- Depresivní (top): {…} ({počet}), {…} ({počet})
-- Smíšené rysy: {ano/ne + 1 věta}
-
-## Události / klíčové momenty a orientační následné trendy
-- {kategorie}: {frekvence}× v období • typicky do 24–72 h: {trend (např. pokles nálady o ~0.6; ↑ stres o ~0.7; nejednoznačné)}
-- {kategorie}: …
-
-## Co pomohlo (nejčastěji)
-- {intervence} ({frekvence}), {intervence} ({frekvence})
-
-## Bezpečnost / Red flags
-- {stručné body nebo „Nezachyceno v datech tohoto období."}
-
-## Body k diskuzi na kontrole
-1) {max 1 věta}
-2) {max 1 věta}
-3) {max 1 věta}
-
-JSON schéma:
+JSON schéma (dodržuj PŘESNĚ tuto strukturu):
 {
-  "period": { "from": "YYYY-MM-DD", "to": "YYYY-MM-DD", "coverage_days": 0, "total_days": 0 },
+  "period": {
+    "from": "YYYY-MM-DD",
+    "to": "YYYY-MM-DD",
+    "coverage_days": 0,
+    "total_days": 0
+  },
+  "critical_warnings": [
+    {
+      "priority": "high|medium|info",
+      "title": "Smíšené stavy",
+      "description": "45% dní (41 z 90) - hypomanické + depresivní příznaky současně",
+      "metric": "45% dní"
+    }
+  ],
+  "mixed_states": {
+    "frequency_percent": 45,
+    "days_count": 41,
+    "total_days": 90,
+    "top_combinations": [
+      {
+        "combination": "Zrychlené myšlení + Silná únava",
+        "count": 38
+      },
+      {
+        "combination": "Klepání nohou + Úzkost",
+        "count": 52
+      },
+      {
+        "combination": "Přehrávání scénářů + Apatie",
+        "count": 35
+      }
+    ]
+  },
+  "triggers": [
+    {
+      "name": "Sociální interakce",
+      "icon": "🏥",
+      "frequency": 20,
+      "impact_score": 8,
+      "mood_change": -1.2,
+      "stress_change": 0.8,
+      "timeframe": "48h",
+      "examples": ["návštěva lékaře", "optika", "jednání s lidmi"]
+    }
+  ],
+  "helped_top": [
+    {
+      "label": "KBT techniky",
+      "count": 60
+    }
+  ],
   "metrics": {
     "mood": { "avg": 0, "min": 0, "max": 0, "days_ge_+2": 0, "days_le_-2": 0, "longest_streak_nonzero": 0 },
     "sleep": { "avg_h": 0, "outliers_lt5": 0, "outliers_gt9_10": 0, "quality_mode": "Průměrný" },
@@ -121,23 +177,15 @@ JSON schéma:
   },
   "symptoms": {
     "hypomanic_top": [{"label": "…", "count": 0}],
-    "depressive_top": [{"label": "…", "count": 0}],
-    "mixed_features": { "present": false, "note": "" }
-  },
-  "events": [
-    { "category": "návštěva_lékaře", "count": 0, "post_24_72h_trend": "nejednoznačné" }
-  ],
-  "helped_top": [{"label": "KBT/techniky", "count": 0}],
-  "red_flags": ["…"],
-  "discussion_points": ["…", "…", "…"],
-  "markdown_summary": "…"
+    "depressive_top": [{"label": "…", "count": 0}]
+  }
 }`;
 
     const userPrompt = `Zde jsou data za období ${startDate} až ${endDate} (${totalDays} záznamů za poslední 3 měsíce):
 
 ${JSON.stringify(entries, null, 2)}
 
-Proveď analýzu a vrať výsledek ve formátu JSON včetně markdown_summary.`;
+Proveď analýzu a vrať výsledek ve formátu JSON.`;
 
     // Call GPT-4.1-mini (best balance of quality, speed, and cost)
     const completion = await openai.chat.completions.create({

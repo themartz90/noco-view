@@ -41,14 +41,26 @@ export function calculateMoodMetrics(entries: ProcessedMoodEntry[]): MoodMetrics
     dominantStateColor = 'bg-green-600';
   }
 
-  // Stabilita (počet změn >2 body)
+  // Stabilita - kombinuje volatilitu (výkyvy) a blízkost k neutrální náladě (0)
+  // Konzistentní -2,-2,-2 NENÍ stabilita, ale perzistentní deprese
+
+  // 1. Volatilita - kolik dní má změnu ≥2
   let largeChanges = 0;
   for (let i = 1; i < entries.length; i++) {
     if (Math.abs(entries[i].mood - entries[i-1].mood) >= 2) {
       largeChanges++;
     }
   }
-  const stabilityScore = Math.max(0, 100 - (largeChanges / entries.length) * 100);
+  const volatilityScore = entries.length > 1
+    ? 1 - (largeChanges / (entries.length - 1))
+    : 1;
+
+  // 2. Blízkost k neutrální (0) - průměrná absolutní hodnota
+  const avgDistanceFromNeutral = entries.reduce((sum, e) => sum + Math.abs(e.mood), 0) / entries.length;
+  const neutralityScore = 1 - (avgDistanceFromNeutral / 3); // max vzdálenost je 3
+
+  // 3. Kombinace obou (50% volatilita + 50% blízkost k 0)
+  const stabilityScore = Math.round(((volatilityScore * 0.5) + (neutralityScore * 0.5)) * 100);
   const stabilityLabel = stabilityScore > 70 ? 'Vysoká' : stabilityScore > 40 ? 'Střední' : 'Nízká';
 
   // Dny v krizi

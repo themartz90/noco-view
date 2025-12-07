@@ -6,6 +6,7 @@ import PeriodSelector from '@/components/dashboard/PeriodSelector';
 import MetricsGrid from '@/components/metrics/MetricsGrid';
 import MoodChart from '@/components/charts/MoodChart';
 import TimelineTable from '@/components/timeline/TimelineTable';
+import AIAnalysisNew from '@/components/AIAnalysisNew';
 import { MoodEntry, DateRangeType } from '@/types/mood';
 import { parseAllEntries } from '@/lib/moodParser';
 import { calculateMoodMetrics } from '@/lib/moodMetrics';
@@ -109,19 +110,14 @@ export default function HomePage() {
           <MoodChart entries={filteredEntries} />
         </section>
 
+        {/* AI Analysis - Opus Strategy */}
+        <section>
+          <AIAnalysisNew entries={rawEntries} />
+        </section>
+
         {/* Timeline */}
         <section>
           <TimelineTable entries={filteredEntries} />
-        </section>
-
-        {/* AI Placeholder (Fáze 3) */}
-        <section className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50/50">
-          <p className="text-blue-700 font-medium">
-            🤖 AI Klinická analýza (připravujeme ve Fázi 3)
-          </p>
-          <p className="text-blue-600 text-sm mt-2">
-            Red flags panel, smíšené stavy, spouštěče, body k diskuzi
-          </p>
         </section>
       </main>
 

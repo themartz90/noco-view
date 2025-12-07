@@ -2,9 +2,10 @@ import { MoodEntry, ProcessedMoodEntry } from '@/types/mood';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 
-export function parseMoodValue(moodString: string): number {
-  // "-3 (Těžká deprese)" → -3
-  const match = moodString.match(/^(-?\d+)/);
+export function parseMoodValue(moodString: string | undefined | null): number {
+  // "-3 (Těžká deprese)" → -3, "+3 (Jasná hypománie)" → +3
+  if (!moodString) return 0;
+  const match = moodString.match(/^([+-]?\d+)/);
   return match ? parseInt(match[1]) : 0;
 }
 
@@ -42,8 +43,9 @@ export function getMoodEmoji(mood: number): string {
   return '🤷';
 }
 
-export function getOverloadValue(overloadString: string): number {
+export function getOverloadValue(overloadString: string | undefined | null): number {
   // "0 - Žádné" → 0, "3 - Silné" → 3
+  if (!overloadString) return 0;
   const match = overloadString.match(/^(\d+)/);
   return match ? parseInt(match[1]) : 0;
 }
@@ -57,17 +59,28 @@ export function formatDateLabel(date: Date): string {
   return format(date, 'd. MMM', { locale: cs });
 }
 
-export function parseSymptoms(symptomsString: string): string[] {
+export function parseSymptoms(symptomsString: string | undefined | null): string[] {
   if (!symptomsString) return [];
   return symptomsString.split(',').map(s => s.trim()).filter(Boolean);
 }
 
 export function parseMoodEntry(entry: MoodEntry): ProcessedMoodEntry {
   const date = new Date(entry.Datum);
-  const mood = parseMoodValue(entry['Dominantní nálada']);
+  const moodString = entry['Dominatní nálada'];
+  const mood = parseMoodValue(moodString);
+
+  // Debug: log if mood parsing fails
+  if (mood === 0 && moodString && !moodString.includes('0')) {
+    console.warn(`[MoodParser] Failed to parse mood for ${entry.Datum}:`, moodString);
+  }
+
   const overload = getOverloadValue(entry.Přetížení);
   const hypomanicSymptoms = parseSymptoms(entry['Hypomanické příznaky']);
   const depressiveSymptoms = parseSymptoms(entry['Depresivní příznaky']);
+
+  // Parse stress as number (API returns it as string "4" not number 4)
+  const stressValue = entry['Stres (1–5)'];
+  const stress = typeof stressValue === 'string' ? parseInt(stressValue) : stressValue;
 
   return {
     id: entry.Id,
@@ -84,7 +97,7 @@ export function parseMoodEntry(entry: MoodEntry): ProcessedMoodEntry {
     fatigue: entry.Únava,
     sleepHours: entry['Spánek (délka)'],
     sleepQuality: entry.Spánek,
-    stress: entry['Stres (1-5)'],
+    stress,
     overload,
     overloadLabel: entry.Přetížení,
     overloadDisplay: getOverloadDisplay(overload),

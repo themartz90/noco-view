@@ -2,12 +2,12 @@
 export interface MoodEntry {
   Id: number;
   Datum: string; // YYYY-MM-DD
-  'Dominantní nálada': string; // "-3 (Těžká deprese)" až "+3 (Výrazná hypománie)"
+  'Dominatní nálada': string; // "-3 (Těžká deprese)" až "+3 (Výrazná hypománie)"
   Energie: 'Nízká' | 'Střední' | 'Vysoká';
   Únava: 'Nízká' | 'Střední' | 'Silná';
   'Spánek (délka)': number; // hodiny
   Spánek: 'Špatný' | 'Průměrný' | 'Dobrý';
-  'Stres (1-5)': number;
+  'Stres (1–5)': number | string; // API vrací jako string "4", ne number 4
   Přetížení: string; // "0 - Žádné" až "3 - Silné"
   'Hypomanické příznaky': string; // comma-separated
   'Depresivní příznaky': string; // comma-separated

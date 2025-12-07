@@ -7,18 +7,19 @@ const NOCODB_URL = process.env.NODE_ENV === 'production'
 const TABLE_ID = 'm1w6ly4p8iu64s9'; // AI_Analyses table
 const API_KEY = 'LehBM_s0bzNbhywtVYr_egxfe4AM3h75yLulZif3';
 
-// GET: Fetch analysis by period_key
+// GET: Fetch analysis by period_key (with fuzzy matching support)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const periodKey = searchParams.get('period_key');
+    const fuzzy = searchParams.get('fuzzy') === 'true';
 
     if (!periodKey) {
       return NextResponse.json({ error: 'period_key is required' }, { status: 400 });
     }
 
-    // Query NocoDB for matching period_key
-    const response = await fetch(
+    // Try exact match first
+    const exactResponse = await fetch(
       `${NOCODB_URL}/api/v2/tables/${TABLE_ID}/records?where=(period_key,eq,${encodeURIComponent(periodKey)})&sort=-CreatedAt&limit=1`,
       {
         headers: {
@@ -28,20 +29,87 @@ export async function GET(request: Request) {
       }
     );
 
-    if (!response.ok) {
-      throw new Error(`NocoDB API error: ${response.status}`);
+    if (!exactResponse.ok) {
+      throw new Error(`NocoDB API error: ${exactResponse.status}`);
     }
 
-    const data = await response.json();
+    const exactData = await exactResponse.json();
 
-    if (data.list && data.list.length > 0) {
-      const record = data.list[0];
+    if (exactData.list && exactData.list.length > 0) {
+      const record = exactData.list[0];
       return NextResponse.json({
         found: true,
         analysis: JSON.parse(record.analysis_json),
         usage: record.tokens_used ? { total_tokens: record.tokens_used } : null,
         created_at: record.CreatedAt,
+        cache_key: record.period_key,
       });
+    }
+
+    // If no exact match and fuzzy is enabled, try approximate matching
+    if (fuzzy) {
+      // Parse the requested period key to extract date range
+      const keyMatch = periodKey.match(/^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})_(\d+)$/);
+      if (!keyMatch) {
+        return NextResponse.json({ found: false });
+      }
+
+      const [, requestedStart, requestedEnd, requestedCount] = keyMatch;
+      const requestedCountNum = parseInt(requestedCount, 10);
+
+      // Fetch recent cache entries (last 30 days worth)
+      const allResponse = await fetch(
+        `${NOCODB_URL}/api/v2/tables/${TABLE_ID}/records?sort=-CreatedAt&limit=20`,
+        {
+          headers: {
+            'xc-token': API_KEY,
+          },
+          cache: 'no-store',
+        }
+      );
+
+      if (!allResponse.ok) {
+        return NextResponse.json({ found: false });
+      }
+
+      const allData = await allResponse.json();
+
+      // Find best match within ±5 days tolerance
+      let bestMatch = null;
+      let bestScore = Infinity;
+
+      for (const record of allData.list || []) {
+        const cacheKeyMatch = record.period_key?.match(/^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})_(\d+)$/);
+        if (!cacheKeyMatch) continue;
+
+        const [, cacheStart, cacheEnd, cacheCount] = cacheKeyMatch;
+        const cacheCountNum = parseInt(cacheCount, 10);
+
+        // Calculate date differences (in days)
+        const startDiff = Math.abs(dateDiffInDays(requestedStart, cacheStart));
+        const endDiff = Math.abs(dateDiffInDays(requestedEnd, cacheEnd));
+        const countDiff = Math.abs(requestedCountNum - cacheCountNum);
+
+        // Only consider matches within ±5 days on both dates
+        if (startDiff <= 5 && endDiff <= 5) {
+          const score = startDiff + endDiff + (countDiff * 0.1); // Prioritize date match over count
+          if (score < bestScore) {
+            bestScore = score;
+            bestMatch = record;
+          }
+        }
+      }
+
+      if (bestMatch) {
+        return NextResponse.json({
+          found: true,
+          analysis: JSON.parse(bestMatch.analysis_json),
+          usage: bestMatch.tokens_used ? { total_tokens: bestMatch.tokens_used } : null,
+          created_at: bestMatch.CreatedAt,
+          cache_key: bestMatch.period_key,
+          fuzzy_matched: true,
+        });
+      }
     }
 
     return NextResponse.json({ found: false });
@@ -52,6 +120,14 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// Helper: Calculate difference in days between two YYYY-MM-DD dates
+function dateDiffInDays(date1: string, date2: string): number {
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  const diffTime = d2.getTime() - d1.getTime();
+  return Math.round(diffTime / (1000 * 60 * 60 * 24));
 }
 
 // POST: Save new analysis

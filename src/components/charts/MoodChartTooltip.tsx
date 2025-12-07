@@ -5,39 +5,44 @@ export default function MoodChartTooltip({ active, payload }: any) {
   const entry = data.entry;
 
   return (
-    <div className="bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-xs">
-      <p className="font-semibold text-gray-900 mb-2">
-        {entry.dateLabel} ({entry.dateString})
+    <div className="bg-white border-2 border-gray-200 rounded-lg shadow-xl p-4 max-w-sm">
+      <p className="font-bold text-gray-900 mb-3 text-base border-b border-gray-200 pb-2">
+        {entry.dateLabel}
       </p>
 
-      <div className="space-y-1 text-sm">
-        <p className="flex items-center gap-2">
-          <span className="font-medium">Nálada:</span>
-          <span className={`px-2 py-0.5 rounded ${entry.moodColor}`}>
-            {entry.moodEmoji} {entry.mood} ({entry.moodLabel})
+      <div className="space-y-2 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="font-medium text-gray-700">Nálada:</span>
+          <span className={`px-3 py-1 rounded-md text-sm font-semibold ${entry.moodColor}`}>
+            {entry.mood} ({entry.moodLabel})
           </span>
-        </p>
+        </div>
 
-        <p>
-          <span className="font-medium">Přetížení:</span> {entry.overloadDisplay} {entry.overloadLabel}
-        </p>
+        <div className="flex items-center justify-between">
+          <span className="font-medium text-gray-700">Přetížení:</span>
+          <span className="text-gray-900">{entry.overload}/3</span>
+        </div>
 
-        <p>
-          <span className="font-medium">Energie:</span> {entry.energy}
-        </p>
+        <div className="flex items-center justify-between">
+          <span className="font-medium text-gray-700">Energie:</span>
+          <span className="text-gray-900">{entry.energy}</span>
+        </div>
 
-        <p>
-          <span className="font-medium">Stres:</span> {entry.stress}/5
-        </p>
+        <div className="flex items-center justify-between">
+          <span className="font-medium text-gray-700">Stres:</span>
+          <span className="text-gray-900">{entry.stress}/5</span>
+        </div>
 
-        <p>
-          <span className="font-medium">Spánek:</span> {entry.sleepHours}h ({entry.sleepQuality})
-        </p>
+        <div className="flex items-center justify-between">
+          <span className="font-medium text-gray-700">Spánek:</span>
+          <span className="text-gray-900">{entry.sleepHours}h ({entry.sleepQuality})</span>
+        </div>
 
         {entry.trigger && (
-          <p className="text-amber-700 mt-2">
-            ⚠️ <span className="font-medium">Spouštěč:</span> {entry.trigger.substring(0, 50)}...
-          </p>
+          <div className="text-amber-700 mt-3 pt-2 border-t border-amber-200">
+            <span className="font-medium">⚠ Spouštěč:</span>
+            <p className="text-xs mt-1 text-gray-700">{entry.trigger.substring(0, 60)}...</p>
+          </div>
         )}
       </div>
     </div>
