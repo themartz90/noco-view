@@ -22,16 +22,16 @@ export default function TimelineTable({ entries }: TimelineTableProps) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full" style={{ tableLayout: 'fixed' }}>
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Datum</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Nálada</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Přetížení</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Spánek</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Stres</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Příznaky</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Spouštěč</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase" style={{ width: '12%' }}>Datum</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase" style={{ width: '10%' }}>Nálada</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase" style={{ width: '14%' }}>Přetížení</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase" style={{ width: '12%' }}>Spánek</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase" style={{ width: '10%' }}>Stres</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase" style={{ width: '14%' }}>Příznaky</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase" style={{ width: '28%' }}>Spouštěč</th>
             </tr>
           </thead>
 
