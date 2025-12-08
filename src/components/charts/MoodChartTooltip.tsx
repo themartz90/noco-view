@@ -1,8 +1,15 @@
+import { getMoodLabel, getMoodColor } from '@/lib/moodParser';
+
 export default function MoodChartTooltip({ active, payload }: any) {
   if (!active || !payload || !payload[0]) return null;
 
   const data = payload[0].payload;
   const entry = data.entry;
+
+  // Fallback: pokud entry nemá mood, použij data z chart payload
+  const mood = entry?.mood ?? data?.mood;
+  const moodLabel = entry?.moodLabel ?? (mood !== undefined ? getMoodLabel(mood) : undefined);
+  const moodColor = entry?.moodColor ?? (mood !== undefined ? getMoodColor(mood) : 'bg-gray-500 text-white');
 
   return (
     <div className="bg-white border-2 border-gray-200 rounded-lg shadow-xl p-4 max-w-sm">
@@ -13,8 +20,8 @@ export default function MoodChartTooltip({ active, payload }: any) {
       <div className="space-y-2 text-sm">
         <div className="flex items-center justify-between">
           <span className="font-medium text-gray-700">Nálada:</span>
-          <span className={`px-3 py-1 rounded-md text-sm font-semibold ${entry.moodColor}`}>
-            {entry.mood} ({entry.moodLabel})
+          <span className={`px-3 py-1 rounded-md text-sm font-semibold ${moodColor}`}>
+            {mood} ({moodLabel})
           </span>
         </div>
 
