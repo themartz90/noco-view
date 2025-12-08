@@ -23,11 +23,13 @@ export default function TimelineRow({ entry, isExpanded, onToggle, isEven }: Tim
         {/* Datum */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-gray-400" />
-            )}
+            <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              )}
+            </div>
             <span className="font-medium text-gray-900">{entry.dateLabel}</span>
           </div>
         </td>

@@ -32,9 +32,9 @@ export default function MetricsGrid({ metrics }: MetricsGridProps) {
         }
       />
 
-      {/* 3. Dny v krizi */}
+      {/* 3. Významné epizody */}
       <MetricCard
-        title="Dny v krizi"
+        title="Významné epizody"
         value={metrics.crisisDays}
         subtitle={`${metrics.crisisDaysPercent}% období`}
         icon={AlertTriangle}
